@@ -37,8 +37,13 @@
     
     # Clone repo and build
     WORKDIR /usr/src
-    RUN git clone --depth 1 --branch ${GIT_REF} ${REPO_URL} snarkOS
+    RUN git clone ${REPO_URL} snarkOS && \
+        cd snarkOS && \
+        git fetch --all && \
+        git checkout ${GIT_REF}
     
+    WORKDIR /usr/src/snarkOS
+    RUN cargo build --release
     
     WORKDIR /usr/src/snarkOS
     RUN cargo build --release && strip target/release/snarkos
