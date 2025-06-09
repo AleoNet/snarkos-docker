@@ -1,0 +1,57 @@
+name: Build and Push SnarkOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        required: true
+        type: string
+        description: "SnarkOS version tag (e.g. v1.2.3)"
+      architectures:
+        required: true
+        default: "amd64,arm64"
+        description: "Comma-separated arch list"
+      environment:
+        required: true
+        default: "canary"
+        type: choice
+        options:
+          - canary
+          - testnet
+          - mainnet
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-16-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Auth to GCP via OIDC
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: access_token
+          workload_identity_provider: "projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github"
+          service_account: "anf-builder@YOUR_PROJECT_ID.iam.gserviceaccount.com"
+
+      - name: Configure Docker for GAR
+        run: gcloud auth configure-docker gcr.io
+
+      - name: Parse architectures
+        id: parse
+        run: echo "archs=$(echo '${{ inputs.architectures }}' | tr ',' ' ')" >> "$GITHUB_OUTPUT"
+
+      - name: Build and Push SnarkOS Image
+        run: |
+          docker buildx create --use
+          for arch in ${{ steps.parse.outputs.archs }}; do
+            docker buildx build \
+              --platform linux/$arch \
+              --build-arg GIT_REF=${{ inputs.tag }} \
+              --build-arg IMAGE_NAME=ubuntu:24.04 \
+              -t gcr.io/YOUR_PROJECT_ID/snarkos/${{ inputs.environment }}/snarkos:${{ inputs.tag }}-$arch \
+              --push .
+          done

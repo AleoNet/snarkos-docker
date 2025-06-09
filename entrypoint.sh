@@ -3,12 +3,12 @@ set -euo pipefail
 # running the Aleo snarkOS in a container
 
 # Set environment variables with defaults
-export RUST_LOG="${RUST_LOG:-debug}"
-export NETWORK="${NETWORK:-2}"  # default is 2 (canary) if not provided
-export SNARKOS_PORT="${SNARKOS_PORT:-0.0.0.0:4130}"
-export RPC_PORT="${RPC_PORT:-0.0.0.0:3030}"
-export LOGLEVEL="${LOGLEVEL:-4}"
-export FUNC="${FUNC:-client}"
+export RUST_LOG="${RUST_LOG}"
+export NETWORK="${NETWORK}"  # default is 2 (canary) if not provided
+export SNARKOS_PORT="${SNARKOS_PORT}"
+export RPC_PORT="${RPC_PORT}"
+export LOGLEVEL="${LOGLEVEL}"
+export FUNC="${FUNC}"
 
 # Generate private key if not provided
 if [[ -z ${ALEO_PRIVKEY+a} ]]; then
