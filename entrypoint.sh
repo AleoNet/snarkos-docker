@@ -1,9 +1,10 @@
 #!/bin/bash
+set -euo pipefail
 # running the Aleo snarkOS in a container
 
 # Set environment variables with defaults
 export RUST_LOG="${RUST_LOG:-debug}"
-export NETWORK="${NETWORK:-2}"  # default is 1 (testnet) if not provided
+export NETWORK="${NETWORK:-2}"  # default is 2 (canary) if not provided
 export SNARKOS_PORT="${SNARKOS_PORT:-0.0.0.0:4130}"
 export RPC_PORT="${RPC_PORT:-0.0.0.0:3030}"
 export LOGLEVEL="${LOGLEVEL:-4}"

@@ -36,13 +36,9 @@ ENV BUILD_NETWORK=${NETWORK}
 
 # Clone repo and build
 WORKDIR /usr/src
-RUN git clone -n ${REPO_URL} snarkOS && \
-    cd snarkOS && \
-    git fetch origin ${GIT_REF} && \
-    git checkout FETCH_HEAD
+RUN git clone --depth 1 --branch ${GIT_REF} ${REPO_URL} snarkOS
+
 
 WORKDIR /usr/src/snarkOS
-RUN cargo build --release
+RUN cargo build --release && strip target/release/snarkos
 
-# Optionally export the built binary (helpful if building this image as an artifact)
-# ENTRYPOINT ["/usr/src/snarkOS/target/release/snarkos"]
