@@ -5,6 +5,7 @@ on:
     inputs:
       git_ref:
         required: true
+        default: "c4c76b6"
         type: string
         description: "Git ref to checkout (branch, tag, or SHA)"
       tag:
@@ -30,6 +31,9 @@ on:
         required: true
         description: "GCP project NUMBER to use in workload_identity_provider"
 
+  push:
+    branches:
+      - dockerfile
 
 permissions:
   id-token: write
