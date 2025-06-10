@@ -3,10 +3,14 @@ name: Build and Push SnarkOS
 on:
   workflow_dispatch:
     inputs:
+      git_ref:
+        required: true
+        type: string
+        description: "Git ref to checkout (branch, tag, or SHA)"
       tag:
         required: true
         type: string
-        description: "SnarkOS version tag (e.g. v1.2.3)"
+        description: "Docker image tag to push (e.g. v1.2.3)"
       architectures:
         required: true
         default: "amd64,arm64"
@@ -25,9 +29,7 @@ on:
       project_number:
         required: true
         description: "GCP project NUMBER to use in workload_identity_provider"
-  push:
-    branches:
-      - dockerfile
+
 
 permissions:
   id-token: write
@@ -67,5 +69,3 @@ jobs:
               -t us-east1-docker.pkg.dev/${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}/snarkos-containers/${{ inputs.environment }}-snarkos:${{ github.event.inputs.tag }}-$arch \
               --push .
           done
-
-
