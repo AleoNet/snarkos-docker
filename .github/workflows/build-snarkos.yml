@@ -52,7 +52,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # Do not pass "ref" if it might be a SHA — this is the key fix.
+          fetch-tags: true
+          ref: main  # use a valid branch as entrypoint
+
+      - name: Fetch all refs
+        run: git fetch --all
 
       - name: Checkout specific Git ref
         run: |
