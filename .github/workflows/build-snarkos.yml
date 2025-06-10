@@ -53,7 +53,7 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-          ref: main  # use a valid branch as entrypoint
+          ref: staging  # use a valid branch as entrypoint
 
       - name: Fetch all refs
         run: git fetch --all
