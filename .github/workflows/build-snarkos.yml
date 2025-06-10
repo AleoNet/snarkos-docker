@@ -30,7 +30,10 @@ on:
       project_number:
         required: true
         description: "GCP project NUMBER to use in workload_identity_provider"
-
+  push:
+    branches:
+      - dockerfile
+      
 permissions:
   id-token: write
   contents: read
