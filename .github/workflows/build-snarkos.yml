@@ -71,12 +71,19 @@ jobs:
 
       - name: Build and Push SnarkOS Docker image
         run: |
+          cd ${{ github.workspace }}
           docker buildx create --use
-
+          docker buildx inspect --bootstrap
+          docker buildx ls
+          pwd
+          ls -l
           for arch in ${{ steps.parse.outputs.archs }}; do
             docker buildx build \
               --platform linux/$arch \
               --build-arg GIT_REF=${{ env.GIT_REF }} \
               --build-arg NETWORK=${{ env.ENVIRONMENT }} \
-              -t us-east1-docker.pkg.dev/${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}/snarkos-containers/${{ env.ENVIRONMENT }}-snarkos:${{ env.DOCKER_TAG }}-$arch --push .
+              -t us-east1-docker.pkg.dev/${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}/snarkos-containers/${{ env.ENVIRONMENT }}-snarkos:${{ env.DOCKER_TAG }}-$arch \
+              --push \
+              .
           done
+
