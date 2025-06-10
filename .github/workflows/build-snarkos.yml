@@ -2,10 +2,6 @@ name: Build and Push SnarkOS
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - dockerfile
-
     inputs:
       tag:
         required: true
@@ -29,6 +25,9 @@ on:
       project_number:
         required: true
         description: "GCP project NUMBER to use in workload_identity_provider"
+  push:
+    branches:
+      - dockerfile
 
 permissions:
   id-token: write
