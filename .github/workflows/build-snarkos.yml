@@ -75,7 +75,9 @@ jobs:
 
       - name: Parse architectures
         id: parse
-        run: echo "archs=$(echo '${{ github.event.inputs.architectures }}' | tr ',' ' ')" >> "$GITHUB_OUTPUT"
+        run: echo "archs=$(echo '${{ inputs.architectures }}' | tr ',' ' ')" >> $GITHUB_OUTPUT
+        outputs:
+            archs: ${{ steps.parse.outputs.archs }}
 
       - name: Build and Push SnarkOS Image
         run: |
