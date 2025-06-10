@@ -51,8 +51,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ env.GIT_REF }}
           fetch-depth: 0
+          # Do not pass "ref" if it might be a SHA — this is the key fix.
+
+      - name: Checkout specific Git ref
+        run: |
+          git checkout $GIT_REF
+
 
       - name: Auth to GCP via OIDC
         uses: google-github-actions/auth@v2
