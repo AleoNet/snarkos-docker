@@ -26,9 +26,13 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-16-core
+    runs-on: ubuntu-16-cores
+
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Test auth - list Artifact Registry repos
+        run: gcloud artifacts repositories list --location=us-east1
 
       - name: Auth to GCP via OIDC
         uses: google-github-actions/auth@v2
@@ -37,8 +41,8 @@ jobs:
           workload_identity_provider: "projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github"
           service_account: "anf-builder@YOUR_PROJECT_ID.iam.gserviceaccount.com"
 
-      - name: Configure Docker for GAR
-        run: gcloud auth configure-docker gcr.io
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker us-east1-docker.pkg.dev
 
       - name: Parse architectures
         id: parse
@@ -52,6 +56,6 @@ jobs:
               --platform linux/$arch \
               --build-arg GIT_REF=${{ inputs.tag }} \
               --build-arg IMAGE_NAME=ubuntu:24.04 \
-              -t gcr.io/YOUR_PROJECT_ID/snarkos/${{ inputs.environment }}/snarkos:${{ inputs.tag }}-$arch \
+              -t us-east1-docker.pkg.dev/YOUR_PROJECT_ID/snarkos-containers/${{ inputs.environment }}-snarkos:${{ inputs.tag }}-$arch \
               --push .
           done

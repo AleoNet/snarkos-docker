@@ -1,6 +1,27 @@
 # snarkos-docker
 Repo to build docker image for each release/update and push to gcp registry.
-### 3. Create Terraform Service Account
+
+# Quick start
+### 1. Set Environment and Download Secrets
+
+```bash
+./scripts/download_secrets.sh  # Choose: test, canary, testnet, mainnet
+source scripts/set_env.sh  # Choose: test, canary, testnet, mainnet
+```
+
+---
+
+### 2. Initialize and Apply Terraform
+
+```bash
+cd envs/{test}
+terragrunt init  
+terragrunt plan  
+terragrunt apply
+```
+
+# Initial set up
+### 1. Create Terraform Service Account
 
 ```bash
 gcloud iam service-accounts create terraform-sa --display-name "Terraform Service Account"
@@ -8,7 +29,7 @@ gcloud iam service-accounts create terraform-sa --display-name "Terraform Servic
 
 ---
 
-### 4. Assign IAM Roles
+### 2. Assign IAM Roles
 
 Replace `<PROJECT_NAME>` with your actual project name.
 
