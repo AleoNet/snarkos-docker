@@ -60,9 +60,10 @@ jobs:
           for arch in ${{ steps.parse.outputs.archs }}; do
             docker buildx build \
               --platform linux/$arch \
-              --build-arg GIT_REF=${{ inputs.tag }} \
+              --build-arg GIT_REF=${{ github.event.inputs.git_ref || github.ref_name }} \
               --build-arg IMAGE_NAME=ubuntu:24.04 \
-              -t us-east1-docker.pkg.dev/${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}/snarkos-containers/${{ inputs.environment }}-snarkos:${{ inputs.tag }}-$arch \
+              -t us-east1-docker.pkg.dev/${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}/snarkos-containers/${{ inputs.environment }}-snarkos:${{ github.event.inputs.tag }}-$arch \
               --push .
           done
+
 
