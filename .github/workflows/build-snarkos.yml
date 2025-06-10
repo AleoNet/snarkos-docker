@@ -48,6 +48,7 @@ jobs:
       DOCKER_TAG: "${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || (github.event_name == 'push' && 'v1.2.3') }}"
       ARCHS: "${{ github.event_name == 'workflow_dispatch' && github.event.inputs.architectures || 'amd64 arm64' }}"
       ENVIRONMENT: "${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'canary' }}"
+      GCP_PROJECT_ID_FINAL: ${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}
 
     steps:
       - uses: actions/checkout@v4
@@ -70,6 +71,8 @@ jobs:
           echo "archs=$(echo '${{ env.ARCHS }}' | tr ',' ' ')" >> $GITHUB_OUTPUT
 
       - name: Build and Push SnarkOS Docker image
+        env:
+          GCP_PROJECT_ID_FINAL: ${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}
         run: |
           cd ${{ github.workspace }}
           docker buildx create --use
@@ -77,13 +80,13 @@ jobs:
           docker buildx ls
           pwd
           ls -l
+          echo "Using project ID: $GCP_PROJECT_ID_FINAL"
           for arch in ${{ steps.parse.outputs.archs }}; do
             docker buildx build \
               --platform linux/$arch \
               --build-arg GIT_REF=${{ env.GIT_REF }} \
               --build-arg NETWORK=${{ env.ENVIRONMENT }} \
-              -t us-east1-docker.pkg.dev/${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}/snarkos-containers/${{ env.ENVIRONMENT }}-snarkos:${{ env.DOCKER_TAG }}-$arch \
+              -t us-east1-docker.pkg.dev/$GCP_PROJECT_ID_FINAL/snarkos-containers/${{ env.ENVIRONMENT }}-snarkos:${{ env.DOCKER_TAG }}-$arch \
               --push \
               .
           done
-
