@@ -31,10 +31,6 @@ on:
         required: true
         description: "GCP project NUMBER to use in workload_identity_provider"
 
-  push:
-    branches:
-      - dockerfile
-
 permissions:
   id-token: write
   contents: read
@@ -44,24 +40,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ steps.compute_git_ref.outputs.git_ref }}
-          fetch-depth: 0
-
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Compute GIT_REF
-        id: compute_git_ref
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "git_ref=${{ github.event.inputs.git_ref }}" >> $GITHUB_OUTPUT
-          else
-            echo "git_ref=c4c76b6" >> $GITHUB_OUTPUT
-          fi
+          ref: ${{ github.event.inputs.git_ref || github.ref_name }}
 
       - name: Auth to GCP via OIDC
         uses: google-github-actions/auth@v2
@@ -75,17 +56,17 @@ jobs:
 
       - name: Parse architectures
         id: parse
-        run: echo "archs=$(echo '${{ inputs.architectures }}' | tr ',' ' ')" >> $GITHUB_OUTPUT
-        outputs:
-            archs: ${{ steps.parse.outputs.archs }}
+        run: |
+          echo "archs=$(echo '${{ inputs.architectures }}' | tr ',' ' ')" >> $GITHUB_OUTPUT
 
       - name: Build and Push SnarkOS Image
         run: |
+          docker buildx create --use
           for arch in ${{ steps.parse.outputs.archs }}; do
             docker buildx build \
               --platform linux/$arch \
-              --build-arg GIT_REF=${{ steps.compute_git_ref.outputs.git_ref }} \
+              --build-arg GIT_REF=${{ github.event.inputs.git_ref || github.ref_name }} \
               --build-arg IMAGE_NAME=ubuntu:24.04 \
-              -t us-east1-docker.pkg.dev/${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}/snarkos-containers/${{ github.event.inputs.environment }}-snarkos:${{ github.event.inputs.tag }}-$arch \
+              -t us-east1-docker.pkg.dev/${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}/snarkos-containers/${{ inputs.environment }}-snarkos:${{ inputs.tag }}-$arch \
               --push .
           done
