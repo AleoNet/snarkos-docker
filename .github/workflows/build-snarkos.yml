@@ -44,9 +44,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      GIT_REF: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.git_ref || (github.event_name == 'push' && 'c4c76b6') }}
-      DOCKER_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || (github.event_name == 'push' && 'v1.2.3') }}
-      ARCHS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.architectures || 'amd64 arm64' }}
+      GIT_REF: "${{ github.event_name == 'workflow_dispatch' && github.event.inputs.git_ref || (github.event_name == 'push' && 'c4c76b6') }}"
+      DOCKER_TAG: "${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || (github.event_name == 'push' && 'v1.2.3') }}"
+      ARCHS: "${{ github.event_name == 'workflow_dispatch' && github.event.inputs.architectures || 'amd64 arm64' }}"
 
     steps:
       - uses: actions/checkout@v4
@@ -58,4 +58,4 @@ jobs:
         with:
           token_format: access_token
           workload_identity_provider: "projects/${{ github.event.inputs.project_number || secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github"
-          service_account: "anf-builder@${{_
+          service_account: "anf-builder@${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com"
