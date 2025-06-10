@@ -39,6 +39,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.git_ref || github.ref_name }}
 
       - name: Auth to GCP via OIDC
         uses: google-github-actions/auth@v2
