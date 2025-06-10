@@ -44,8 +44,8 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           token_format: access_token
-          workload_identity_provider: "projects/${{ inputs.project_number }}/locations/global/workloadIdentityPools/github-pool/providers/github"
-          service_account: "anf-builder@${{ inputs.project_id }}.iam.gserviceaccount.com"
+          workload_identity_provider: "projects/${{ github.event.inputs.project_number || secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github"
+          service_account: "anf-builder@${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com"
 
       - name: Test auth - list Artifact Registry repos
         run: gcloud artifacts repositories list --location=us-east1
@@ -65,6 +65,7 @@ jobs:
               --platform linux/$arch \
               --build-arg GIT_REF=${{ inputs.tag }} \
               --build-arg IMAGE_NAME=ubuntu:24.04 \
-              -t us-east1-docker.pkg.dev/${{ inputs.project_id }}/snarkos-containers/${{ inputs.environment }}-snarkos:${{ inputs.tag }}-$arch \
+              -t us-east1-docker.pkg.dev/${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}/snarkos-containers/${{ inputs.environment }}-snarkos:${{ inputs.tag }}-$arch \
               --push .
           done
+
