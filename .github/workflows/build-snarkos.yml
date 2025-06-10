@@ -38,8 +38,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Test auth - list Artifact Registry repos
-        run: gcloud artifacts repositories list --location=us-east1
 
       - name: Auth to GCP via OIDC
         uses: google-github-actions/auth@v2
@@ -48,6 +46,8 @@ jobs:
           workload_identity_provider: "projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github"
           service_account: "anf-builder@${{ inputs.project_id }}.iam.gserviceaccount.com"
 
+      - name: Test auth - list Artifact Registry repos
+        run: gcloud artifacts repositories list --location=us-east1
 
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker us-east1-docker.pkg.dev
