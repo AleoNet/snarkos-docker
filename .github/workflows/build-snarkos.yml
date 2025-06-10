@@ -19,6 +19,10 @@ on:
           - canary
           - testnet
           - mainnet
+      project_id:
+        required: true
+        description: "GCP project ID to push to"
+
 
 permissions:
   id-token: write
@@ -30,7 +34,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      
       - name: Test auth - list Artifact Registry repos
         run: gcloud artifacts repositories list --location=us-east1
 
@@ -39,7 +42,8 @@ jobs:
         with:
           token_format: access_token
           workload_identity_provider: "projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github"
-          service_account: "anf-builder@YOUR_PROJECT_ID.iam.gserviceaccount.com"
+          service_account: "anf-builder@${{ inputs.project_id }}.iam.gserviceaccount.com"
+
 
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker us-east1-docker.pkg.dev
@@ -56,6 +60,6 @@ jobs:
               --platform linux/$arch \
               --build-arg GIT_REF=${{ inputs.tag }} \
               --build-arg IMAGE_NAME=ubuntu:24.04 \
-              -t us-east1-docker.pkg.dev/YOUR_PROJECT_ID/snarkos-containers/${{ inputs.environment }}-snarkos:${{ inputs.tag }}-$arch \
+              -t us-east1-docker.pkg.dev/${{ inputs.project_id }}/snarkos-containers/${{ inputs.environment }}-snarkos:${{ inputs.tag }}-$arch \
               --push .
           done
