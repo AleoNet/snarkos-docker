@@ -7,15 +7,15 @@ on:
         required: false
         default: "c4c76b6"
         type: string
-        description: "Git ref to checkout (branch, tag, or SHA)"
+        description: "Git ref (commit/branch/tag) of snarkOS repo to build"
       tag:
         required: true
         type: string
-        description: "Docker image tag to push (e.g. v1.2.3)"
+        description: "Docker image tag (e.g. v1.2.3)"
       architectures:
         required: true
         default: "amd64,arm64"
-        description: "Comma-separated arch list"
+        description: "Comma-separated architectures"
       environment:
         required: true
         default: "canary"
@@ -26,10 +26,10 @@ on:
           - mainnet
       project_id:
         required: true
-        description: "GCP project ID to push to"
+        description: "GCP project ID"
       project_number:
         required: true
-        description: "GCP project NUMBER to use in workload_identity_provider"
+        description: "GCP project number"
 
   push:
     branches:
@@ -44,24 +44,14 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      GIT_REF: "${{ github.event_name == 'workflow_dispatch' && github.event.inputs.git_ref || (github.event_name == 'push' && 'c4c76b6') }}"
-      DOCKER_TAG: "${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || (github.event_name == 'push' && 'v1.2.3') }}"
-      ARCHS: "${{ github.event_name == 'workflow_dispatch' && github.event.inputs.architectures || 'amd64 arm64' }}"
+      GIT_REF: ${{ github.event.inputs.git_ref || 'c4c76b6' }}
+      DOCKER_TAG: ${{ github.event.inputs.tag || 'v1.2.3' }}
+      ARCHS: ${{ github.event.inputs.architectures || 'amd64 arm64' }}
 
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          fetch-tags: true
-          ref: staging  # use a valid branch as entrypoint
-
-      - name: Fetch all refs
-        run: git fetch --all
-
-      - name: Checkout specific Git ref
-        run: |
-          git checkout $GIT_REF
-
+          fetch-depth: 1  # only needed for this repo, not snarkOS
 
       - name: Auth to GCP via OIDC
         uses: google-github-actions/auth@v2
@@ -69,3 +59,24 @@ jobs:
           token_format: access_token
           workload_identity_provider: "projects/${{ github.event.inputs.project_number || secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github"
           service_account: "anf-builder@${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com"
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker us-east1-docker.pkg.dev
+
+      - name: Parse architectures
+        id: parse
+        run: |
+          echo "archs=$(echo '${{ env.ARCHS }}' | tr ',' ' ')" >> $GITHUB_OUTPUT
+
+      - name: Build and Push SnarkOS Docker image
+        run: |
+          docker buildx create --use
+
+          for arch in ${{ steps.parse.outputs.archs }}; do
+            docker buildx build \
+              --platform linux/$arch \
+              --build-arg GIT_REF=${{ env.GIT_REF }} \
+              --build-arg NETWORK=${{ github.event.inputs.environment }} \
+              -t us-east1-docker.pkg.dev/${{ github.event.inputs.project_id }}/snarkos-containers/${{ github.event.inputs.environment }}-snarkos:${{ env.DOCKER_TAG }}-$arch \
+              --push .
+          done
