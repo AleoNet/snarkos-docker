@@ -54,7 +54,7 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker us-east1-docker.pkg.dev
 
-      - name: Parse architectures
+      - name: Parse architectures #Updated
         id: parse
         run: |
           echo "archs=$(echo '${{ inputs.architectures }}' | tr ',' ' ')" >> $GITHUB_OUTPUT
