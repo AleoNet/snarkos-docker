@@ -17,10 +17,15 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
   }
+  attribute_condition = "attribute.repository == 'AleoNet/snarkos-docker'"
 }
 
 resource "google_service_account_iam_member" "allow_snarkos_docker_repo" {
   service_account_id = google_service_account.team_accounts.name
   role               = "roles/iam.workloadIdentityUser"
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/AleoNet/snarkos-docker"
+}
+
+terraform {
+  backend "gcs" {}
 }

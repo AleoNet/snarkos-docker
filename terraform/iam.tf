@@ -11,11 +11,12 @@ resource "google_artifact_registry_repository_iam_member" "builds_writer" {
   member     = "serviceAccount:${google_service_account.team_accounts.email}"
 }
 
-#Optional public read access
+# IAM for readers
 resource "google_artifact_registry_repository_iam_member" "team_readers" {
   for_each   = toset(local.reader_teams)
   location   = google_artifact_registry_repository.snarkos.location
   repository = google_artifact_registry_repository.snarkos.repository_id
   role       = "roles/artifactregistry.reader"
-  member     = each.key
+  member     = "serviceAccount:${google_service_account.reader_teams[each.key].email}"
 }
+

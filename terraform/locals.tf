@@ -1,6 +1,6 @@
 locals {
   reader_teams = [
-    "anf@aleo.org",                        # Optional: real user
+     "anf"                       # Optional: real user
   ]
 
 runners = [
