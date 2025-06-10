@@ -30,10 +30,11 @@ on:
       project_number:
         required: true
         description: "GCP project NUMBER to use in workload_identity_provider"
+
   push:
     branches:
       - dockerfile
-      
+
 permissions:
   id-token: write
   contents: read
@@ -42,34 +43,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      GIT_REF: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.git_ref || (github.event_name == 'push' && 'c4c76b6') }}
+      DOCKER_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || (github.event_name == 'push' && 'v1.2.3') }}
+      ARCHS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.architectures || 'amd64 arm64' }}
+
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.git_ref || github.ref_name }}
+          ref: ${{ env.GIT_REF }}
 
       - name: Auth to GCP via OIDC
         uses: google-github-actions/auth@v2
         with:
           token_format: access_token
           workload_identity_provider: "projects/${{ github.event.inputs.project_number || secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github"
-          service_account: "anf-builder@${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com"
-
-      - name: Configure Docker for Artifact Registry
-        run: gcloud auth configure-docker us-east1-docker.pkg.dev
-
-      - name: Parse architectures #Updated
-        id: parse
-        run: |
-          echo "archs=$(echo '${{ inputs.architectures }}' | tr ',' ' ')" >> $GITHUB_OUTPUT
-
-      - name: Build and Push SnarkOS Image
-        run: |
-          docker buildx create --use
-          for arch in ${{ steps.parse.outputs.archs }}; do
-            docker buildx build \
-              --platform linux/$arch \
-              --build-arg GIT_REF=${{ github.event.inputs.git_ref || github.ref_name }} \
-              --build-arg IMAGE_NAME=ubuntu:24.04 \
-              -t us-east1-docker.pkg.dev/${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}/snarkos-containers/${{ inputs.environment }}-snarkos:${{ inputs.tag }}-$arch \
-              --push .
-          done
+          service_account: "anf-builder@${{_
