@@ -26,7 +26,9 @@ on:
       project_id:
         required: true
         description: "GCP project ID to push to"
-
+      project_number:
+        required: true
+        description: "GCP project NUMBER to use in workload_identity_provider"
 
 permissions:
   id-token: write
@@ -43,7 +45,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           token_format: access_token
-          workload_identity_provider: "projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github"
+          workload_identity_provider: "projects/${{ inputs.project_number }}/locations/global/workloadIdentityPools/github-pool/providers/github"
           service_account: "anf-builder@${{ inputs.project_id }}.iam.gserviceaccount.com"
 
       - name: Test auth - list Artifact Registry repos
