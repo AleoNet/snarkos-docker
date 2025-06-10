@@ -44,9 +44,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.git_ref || 'c4c76b6' }}
+          ref: ${{ steps.compute_git_ref.outputs.git_ref }}
+          fetch-depth: 0
+
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
