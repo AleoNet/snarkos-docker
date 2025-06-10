@@ -78,6 +78,6 @@ jobs:
               --platform linux/$arch \
               --build-arg GIT_REF=${{ env.GIT_REF }} \
               --build-arg NETWORK=${{ github.event.inputs.environment }} \
-              -t us-east1-docker.pkg.dev/${{ github.event.inputs.project_id }}/snarkos-containers/${{ github.event.inputs.environment }}-snarkos:${{ env.DOCKER_TAG }}-$arch \
+              -t us-east1-docker.pkg.dev/${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}/snarkos-containers/${{ env.ENVIRONMENT }}-snarkos:${{ env.DOCKER_TAG }}-$arch
               --push .
           done
