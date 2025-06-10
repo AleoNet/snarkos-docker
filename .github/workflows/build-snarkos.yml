@@ -44,9 +44,10 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      GIT_REF: ${{ github.event.inputs.git_ref || 'c4c76b6' }}
-      DOCKER_TAG: ${{ github.event.inputs.tag || 'v1.2.3' }}
-      ARCHS: ${{ github.event.inputs.architectures || 'amd64 arm64' }}
+      GIT_REF: "${{ github.event_name == 'workflow_dispatch' && github.event.inputs.git_ref || (github.event_name == 'push' && 'c4c76b6') }}"
+      DOCKER_TAG: "${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || (github.event_name == 'push' && 'v1.2.3') }}"
+      ARCHS: "${{ github.event_name == 'workflow_dispatch' && github.event.inputs.architectures || 'amd64 arm64' }}"
+      ENVIRONMENT: "${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'canary' }}"
 
     steps:
       - uses: actions/checkout@v4
