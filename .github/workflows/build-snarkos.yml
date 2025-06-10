@@ -46,21 +46,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.git_ref || github.ref_name }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.git_ref || github.ref_name || 'c4c76b6' }}
 
       - name: Auth to GCP via OIDC
         uses: google-github-actions/auth@v2
         with:
           token_format: access_token
-          workload_identity_provider: "projects/${{ github.event.inputs.project_number || secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github"
-          service_account: "anf-builder@${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com"
+          workload_identity_provider: "projects/${{ github.event_name == 'workflow_dispatch' && github.event.inputs.project_number || secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github"
+          service_account: "anf-builder@${{ github.event_name == 'workflow_dispatch' && github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com"
 
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker us-east1-docker.pkg.dev
 
       - name: Parse architectures
         id: parse
-        run: echo "archs=$(echo '${{ inputs.architectures }}' | tr ',' ' ')" >> "$GITHUB_OUTPUT"
+        run: echo "archs=$(echo '${{ github.event.inputs.architectures || 'amd64,arm64' }}' | tr ',' ' ')" >> "$GITHUB_OUTPUT"
 
       - name: Build and Push SnarkOS Image
         run: |
@@ -68,8 +68,8 @@ jobs:
           for arch in ${{ steps.parse.outputs.archs }}; do
             docker buildx build \
               --platform linux/$arch \
-              --build-arg GIT_REF=${{ github.event.inputs.git_ref || github.ref_name }} \
+              --build-arg GIT_REF=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.git_ref || github.ref_name || 'c4c76b6' }} \
               --build-arg IMAGE_NAME=ubuntu:24.04 \
-              -t us-east1-docker.pkg.dev/${{ github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}/snarkos-containers/${{ inputs.environment }}-snarkos:${{ github.event.inputs.tag }}-$arch \
+              -t us-east1-docker.pkg.dev/${{ github.event_name == 'workflow_dispatch' && github.event.inputs.project_id || secrets.GCP_PROJECT_ID }}/snarkos-containers/${{ github.event.inputs.environment || 'canary' }}-snarkos:${{ github.event.inputs.tag }}-$arch \
               --push .
           done
