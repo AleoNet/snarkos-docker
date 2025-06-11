@@ -3,12 +3,10 @@ set -euo pipefail
 # running the Aleo snarkOS in a container
 
 # Set environment variables with defaults
-export RUST_LOG="${RUST_LOG}"
-export NETWORK="${NETWORK}"  # default is 2 (canary) if not provided
-export SNARKOS_PORT="${SNARKOS_PORT}"
-export RPC_PORT="${RPC_PORT}"
-export LOGLEVEL="${LOGLEVEL}"
-export FUNC="${FUNC}"
+export NETWORK="${NETWORK:-}"  
+export REST_RPS="${REST_RPS:-10000000}"
+export LOGLEVEL="${LOGLEVEL:-4}"
+export FUNC="${FUNC:-}"
 
 # Generate private key if not provided
 if [[ -z ${ALEO_PRIVKEY+a} ]]; then
@@ -16,7 +14,7 @@ if [[ -z ${ALEO_PRIVKEY+a} ]]; then
 fi
 
 # Build common params
-COMMON_PARAMS="--nocdn --nodisplay --logfile /dev/null --node ${SNARKOS_PORT} --rest ${RPC_PORT} --verbosity ${LOGLEVEL} --network ${NETWORK} --private-key ${ALEO_PRIVKEY}"
+COMMON_PARAMS="--network ${NETWORK} --nocdn --nodisplay --logfile /dev/null --rest-rps ${REST_RPS} --verbosity ${LOGLEVEL} --private-key ${ALEO_PRIVKEY}"
 
 # Add peers if provided
 if [[ -n ${PEERS+a} ]]; then
@@ -26,7 +24,7 @@ fi
 # Start node
 case ${FUNC} in
   validator)
-    /aleo/bin/snarkos start --bft ${BFT_PORT} --validators ${VALIDATORS} --validator ${COMMON_PARAMS} --metrics
+    /aleo/bin/snarkos start --validators ${VALIDATORS} --validator ${COMMON_PARAMS} --metrics
     ;;
   client)
     /aleo/bin/snarkos start --allow-external-peers --client ${COMMON_PARAMS}

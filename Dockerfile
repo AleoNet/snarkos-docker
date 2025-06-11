@@ -31,17 +31,22 @@ RUN dpkgArch="$(dpkg --print-architecture)" && \
     esac && \
     curl -sSfL "https://static.rust-lang.org/rustup/dist/${rustArch}/rustup-init" -o rustup-init && \
     chmod +x rustup-init && \
-    ./rustup-init -y --no-modify-path --default-toolchain stable && \
+    ./rustup-init -y --default-toolchain stable && \
     rm rustup-init
+
+# Set correct PATH for cargo
+ENV PATH=/root/.cargo/bin:$PATH
 
 # Clone repo and build
 WORKDIR /usr/src
 
-RUN git clone -n "${REPO_URL}" snarkOS \
-    && cd snarkOS \
-    && git fetch origin "${GIT_REF}" \
-    && git reset --hard FETCH_HEAD \
-    && cargo build --release --features history
+RUN git clone -n "${REPO_URL}" snarkOS 
+
+# Checkout ref and build
+WORKDIR /usr/src/snarkOS
+RUN git checkout "${GIT_REF}" && \
+    cargo build --release --features history
+
 
 # ---------- Final runtime stage ----------
 FROM ${IMAGE_NAME} as runtime
