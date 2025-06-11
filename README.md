@@ -151,4 +151,4 @@ remote_state {
 ### 4. Run terragrunt
 ### 5. Once registry, roles, service account have been created. 
 - Go to anf-builder service account and create a key.
-### 6. Add key to Github actions > Secrets.
+### 6. Add key to Github actions > Secrets > GCP_SA_BUILDER_KEY.
