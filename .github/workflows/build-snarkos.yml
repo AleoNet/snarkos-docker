@@ -32,12 +32,12 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCP_SA_BUILDER_KEY }}
+          service_account_key: ${{ secrets.GCP_SA_IMG_BUILDER_KEY }}
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_SA_BUILDER_KEY }}
+          credentials_json: ${{ secrets.GCP_SA_IMG_BUILDER_KEY }}
 
       - name: Configure Docker for Artifact Registry
         run: |
