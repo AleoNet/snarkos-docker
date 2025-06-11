@@ -1,0 +1,63 @@
+# .github/workflows/build-snarkos.yml
+
+name: Build and Push SnarkOS Multi-Arch Docker Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: 'snarkOS commit SHA or tag'
+        required: true
+      image_tag:
+        description: 'Image tag to push'
+        required: true
+      network_name:
+        description: 'Network name: mainnet, testnet, canary'
+        required: true
+jobs:
+  build-and-push:
+    name: Build and Push Multi-Arch Image
+    runs-on: snarkos-builder
+
+    env:
+      GCP_PROJECT_ID: aleo-provable-migration-test
+      GCP_ARTIFACT_REGISTRY_REGION: us-east1
+      GCP_ARTIFACT_REPO: snarkos-containers
+
+    steps:
+      - name: Checkout Private Repo (Dockerfile + entrypoint.sh)
+        uses: actions/checkout@v4
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.IMAGE_BUILDER_KEY }}
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker us-east1-docker.pkg.dev
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Map NETWORK_NAME to NETWORK number
+        id: network-map
+        run: |
+          case "${{ github.event.inputs.network_name }}" in
+            mainnet) echo "NETWORK=0" >> $GITHUB_ENV ;;
+            testnet) echo "NETWORK=1" >> $GITHUB_ENV ;;
+            canary)  echo "NETWORK=2" >> $GITHUB_ENV ;;
+            *) echo "ERROR: Unknown network '${{ github.event.inputs.network_name }}'." && exit 1 ;;
+          esac
+
+      - name: Build and Push Multi-Arch Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/snarkos:${{ github.event.inputs.image_tag }}
+          build-args: |
+            GIT_REF=${{ github.event.inputs.git_ref }}
+            NETWORK=${{ env.NETWORK }}
