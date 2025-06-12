@@ -46,15 +46,27 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Map NETWORK_NAME to NETWORK number
+      - name: Map NETWORK_NAME to NETWORK number and directory
         id: network-map
         run: |
           case "${{ github.event.inputs.network_name }}" in
-            mainnet) echo "NETWORK=0" >> $GITHUB_ENV ;;
-            testnet) echo "NETWORK=1" >> $GITHUB_ENV ;;
-            canary)  echo "NETWORK=2" >> $GITHUB_ENV ;;
-            *) echo "ERROR: Unknown network '${{ github.event.inputs.network_name }}'." && exit 1 ;;
+            mainnet)
+              echo "NETWORK=0" >> $GITHUB_ENV
+              echo "NETWORK_DIR=mainnet" >> $GITHUB_ENV
+              ;;
+            testnet)
+              echo "NETWORK=1" >> $GITHUB_ENV
+              echo "NETWORK_DIR=testnet" >> $GITHUB_ENV
+              ;;
+            canary)
+              echo "NETWORK=2" >> $GITHUB_ENV
+              echo "NETWORK_DIR=canary" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "ERROR: Unknown network '${{ github.event.inputs.network_name }}'." && exit 1
+              ;;
           esac
+
 
       - name: Build and Push Multi-Arch Image
         uses: docker/build-push-action@v5
@@ -62,7 +74,7 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64
-          tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/snarkos:${{ github.event.inputs.image_tag }}
+          tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }}
           build-args: |
             GIT_REF=${{ github.event.inputs.git_ref }}
             NETWORK=${{ env.NETWORK }}
