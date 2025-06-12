@@ -100,7 +100,7 @@ terragrunt plan
 terragrunt apply
 ```
 
-# Initial set up
+# Initial Terraform set up
 ### 1. Create Terraform Service Account
 
 ```bash
@@ -152,3 +152,127 @@ remote_state {
 ### 5. Once registry, roles, service account have been created. 
 - Go to anf-builder service account and create a key.
 ### 6. Add key to Github actions > Secrets > GCP_SA_BUILDER_KEY.
+---
+# Initial VM setup to pull image
+### 1. Install gcloud
+```bash
+# Add the Cloud SDK distribution URI as a package source
+echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | \
+  sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+
+# Import the Google Cloud public key
+sudo apt-get install -y apt-transport-https ca-certificates gnupg
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+  sudo tee /usr/share/keyrings/cloud.google.gpg > /dev/null
+
+# Update and install the Cloud SDK
+sudo apt-get update && sudo apt-get install -y google-cloud-sdk
+```
+### 2. Authenticate gcloud with GCP service account key
+```bash
+gcloud auth activate-service-account --key-file=<PATH_TO_SA_KEY>
+gcloud auth configure-docker us-east1-docker.pkg.dev
+```
+### 3. Pull docker image
+```bash
+docker pull us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/<NETWORK>/snarkos:<NETWORK>-latest
+```
+---
+### CANARY CLIENT - Run docker container as canary client
+```bash
+docker run -d --name canary-client \
+  -e FUNC=client \
+  -e NETWORK=2 \
+  -e REST_RPS=20 \
+  -e LOGLEVEL=4 \
+  -e ALEO_PRIVKEY="" \
+  -e PEERS="<OTHER_CLIENT_AND_VALIDATOR_IPs>:4130" \
+  us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/canary/snarkos:canary-latest
+
+docker logs -f canary-client
+```
+#### Check snarkos version
+```bash
+docker exec -it canary-client /aleo/bin/snarkos --version
+```
+### CANARY VALIDATOR - Run docker container as canary validator
+```bash
+docker run -d --name canary-validator \
+  -e FUNC=validator \
+  -e NETWORK=2 \
+  -e REST_RPS=20 \
+  -e LOGLEVEL=4 \
+  -e ALEO_PRIVKEY="" \
+  -e PEERS="<OTHER_CLIENT_AND_VALIDATOR_IPs>:4130" \
+  -e VALIDATORS="<OTHER_VALIDATOR_IPs>:5000" \
+  us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/canary/snarkos:canary-latest
+```
+```bash
+docker logs -f canary-validator
+```
+---
+### TESTNET IMAGE
+```bash
+docker pull us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/testnet/snarkos:testnet-latest
+```
+### TESTNET CLIENT
+```bash
+docker run -d --name testnet-client \
+  -e FUNC=client \
+  -e NETWORK=1 \
+  -e REST_RPS=20 \
+  -e LOGLEVEL=4 \
+  -e ALEO_PRIVKEY="" \
+  -e PEERS="<OTHER_CLIENT_AND_VALIDATOR_IPs>:4130" \
+  us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/testnet/snarkos:testnet-latest && docker logs -f testnet-client
+
+docker exec -it testnet-client /aleo/bin/snarkos --version
+```
+
+### TESTNET VALIDATOR
+```bash
+docker run -d --name testnet-validator \
+  -e FUNC=validator \
+  -e NETWORK=1 \
+  -e REST_RPS=20 \
+  -e LOGLEVEL=4 \
+  -e ALEO_PRIVKEY="" \
+  -e PEERS="<OTHER_CLIENT_AND_VALIDATOR_IPs>:4130" \
+  -e VALIDATORS="<OTHER_VALIDATOR_IPs>:5000" \
+  us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/testnet/snarkos:testnet-latest && docker logs -f testnet-validator
+
+docker exec -it testnet-validator /aleo/bin/snarkos --version
+```
+---
+### MAINNET IMAGE
+```bash
+docker pull us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/mainnet/snarkos:mainnet-latest
+```
+### MAINNET CLIENT
+```bash
+docker run -d --name mainnet-client \
+  -e FUNC=client \
+  -e NETWORK=0 \
+  -e REST_RPS=20 \
+  -e LOGLEVEL=4 \
+  -e ALEO_PRIVKEY="" \
+  -e PEERS="<OTHER_CLIENT_AND_VALIDATOR_IPs>:4130" \
+  us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/mainnet/snarkos:mainnet-latest && docker logs -f mainnet-client
+
+docker exec -it mainnet-client /aleo/bin/snarkos --version
+```
+
+### MAINNET VALIDATOR
+```bash
+docker run -d --name mainnet-validator \
+  -e FUNC=validator \
+  -e NETWORK=0 \
+  -e REST_RPS=20 \
+  -e LOGLEVEL=4 \
+  -e ALEO_PRIVKEY="" \
+  -e PEERS="<OTHER_CLIENT_AND_VALIDATOR_IPs>:4130" \
+  -e VALIDATORS="<OTHER_VALIDATOR_IPs>:5000" \
+  us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/mainnet/snarkos:mainnet-latest && docker logs -f mainnet-validator
+
+docker exec -it mainnet-validtor /aleo/bin/snarkos --version
+```
