@@ -13,8 +13,8 @@ You can also trigger a manual build and push via GitHub Actions.
 
 #### Parameters:
 
-* `git_ref`: Git commit SHA, branch, or tag (example: `canary-v3.8.0`)
-* `image_tag`: Desired image tag for Artifact Registry (example: `v3.8.0-canary-20250610`)
+* `git_ref`: Git commit SHA or tag (example: `5f58ab1 or v3.8.0`)
+* `image_tag`: Desired image tag for Artifact Registry (example: `canary-latest, testnet-latest, mainnet-latest`)
 * `network_name`: One of `mainnet`, `testnet`, `canary`
 
 #### Result:
