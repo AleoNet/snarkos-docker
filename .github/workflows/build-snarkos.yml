@@ -83,7 +83,7 @@ jobs:
             GIT_REF=${{ github.event.inputs.git_ref }}
             NETWORK=${{ env.NETWORK }}
 
-      # Conditionally Build and Push Logging Image
+      # Conditionally Build and Push Logging Image if set to true
       - name: Build and Push Logging Multi-Arch Image
         if: ${{ github.event.inputs.build_logging_image == 'true' }}
         uses: docker/build-push-action@v5
