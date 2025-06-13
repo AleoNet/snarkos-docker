@@ -28,12 +28,8 @@ COPY apymon.deb /aleo/apymon/apymon.deb
 RUN file /aleo/apymon/apymon.deb | grep "Debian binary package" && \
     apt install -y /aleo/apymon/apymon.deb
 
-# Copy apymon config and slackenv
-COPY entrypoint.sh /aleo/apymon/entrypoint.sh
-RUN chmod +x /aleo/apymon/entrypoint.sh
-
-
 # Optional: expose port if apymon has HTTP server
 # EXPOSE 9090
-ENTRYPOINT ["/aleo/apymon/entrypoint.sh"]
+CMD ["/aleo/apymon/apymon"]
+
 
