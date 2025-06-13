@@ -14,6 +14,10 @@ on:
       network_name:
         description: 'Network name: mainnet, testnet, canary'
         required: true
+      build_snarkos_image:
+        description: 'Build and push snarkos image (true/false)'
+        required: false
+        default: 'true'
       build_logging_image:
         description: 'Build and push logging image (true/false)'
         required: false
@@ -71,8 +75,9 @@ jobs:
               ;;
           esac
 
-
-      - name: Build and Push Multi-Arch Image
+      # Conditionally Build and Push SnarkOS Image
+      - name: Build and Push SnarkOS Multi-Arch Image
+        if: ${{ github.event.inputs.build_snarkos_image == 'true' }}
         uses: docker/build-push-action@v5
         with:
           context: .
