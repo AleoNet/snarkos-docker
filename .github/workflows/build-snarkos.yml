@@ -14,6 +14,10 @@ on:
       network_name:
         description: 'Network name: mainnet, testnet, canary'
         required: true
+      build_logging_image:
+        description: 'Build and push logging image (true/false)'
+        required: false
+        default: 'false'
 jobs:
   build-and-push:
     name: Build and Push Multi-Arch Image
@@ -78,3 +82,14 @@ jobs:
           build-args: |
             GIT_REF=${{ github.event.inputs.git_ref }}
             NETWORK=${{ env.NETWORK }}
+
+      # Conditionally Build and Push Logging Image
+      - name: Build and Push Logging Multi-Arch Image
+        if: ${{ github.event.inputs.build_logging_image == 'true' }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ./logging
+          file: ./logging/Dockerfile.logging
+          push: true
+          platforms: linux/amd64
+          tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/logging:${{ github.event.inputs.image_tag }}
