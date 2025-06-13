@@ -57,11 +57,16 @@ SHELL ["/bin/bash", "-c"]
 # Create runtime directories
 VOLUME ["/aleo/data"]
 WORKDIR /aleo
-RUN mkdir -p bin data
 
 # Install runtime dependencies
 RUN apt update && \
-    apt install -y --no-install-recommends ca-certificates && \
+    apt install -y --no-install-recommends \
+      ca-certificates \
+      curl \
+      file \
+      python3 \
+      python3-pip \
+      && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
 # Add symlink for .aleo path
@@ -70,8 +75,6 @@ RUN ln -s /aleo/data /root/.aleo
 # Copy binary and entrypoint
 COPY --from=builder /usr/src/snarkOS/target/release/snarkos /aleo/bin/snarkos
 COPY entrypoint.sh /aleo/entrypoint.sh
-
-# Make entrypoint executable
 RUN chmod +x /aleo/entrypoint.sh
 
 # Default CMD
