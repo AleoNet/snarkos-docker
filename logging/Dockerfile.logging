@@ -29,7 +29,6 @@ RUN file /aleo/apymon/apymon.deb | grep "Debian binary package" && \
     apt install -y /aleo/apymon/apymon.deb
 
 # Copy apymon config and slackenv
-COPY apymon.config.yaml /aleo/apymon/config.yaml
 COPY entrypoint.sh /aleo/apymon/entrypoint.sh
 RUN chmod +x /aleo/apymon/entrypoint.sh
 
