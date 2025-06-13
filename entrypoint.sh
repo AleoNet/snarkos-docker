@@ -33,6 +33,3 @@ case ${FUNC} in
     /aleo/bin/snarkos start --allow-external-peers --client ${COMMON_PARAMS}
     ;;
 esac
-
-# Start apymon in background
-/aleo/bin/apymon --config /aleo/apymon/config.yaml &
