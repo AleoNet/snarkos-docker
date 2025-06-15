@@ -4,24 +4,7 @@ set -euo pipefail
 
 # Set environment variables with defaults
 export NETWORK="${NETWORK:-}"  
-export REST_RPS="${REST_RPS:-10000000}"
-export LOGLEVEL="${LOGLEVEL:-4}"
-export FUNC="${FUNC:-}"
-
-# Generate private key if not provided
-if [[ -z ${ALEO_PRIVKEY+a} ]]; then
-  ALEO_PRIVKEY="$(/aleo/bin/snarkos account new | grep APrivateKey1 | awk '{ print $3; }')"
-fi
-
-# Build common params
-COMMON_PARAMS="--network ${NETWORK} --nocdn --nodisplay --logfile /dev/null --rest-rps ${REST_RPS} --verbosity ${LOGLEVEL} --private-key ${ALEO_PRIVKEY}"
-
-#!/bin/bash
-set -euo pipefail
-
-# Set environment variables with defaults
-export NETWORK="${NETWORK:-}"
-export REST_RPS="${REST_RPS:-10000000}"
+export REST_RPS="${REST_RPS:-}"
 export LOGLEVEL="${LOGLEVEL:-4}"
 export FUNC="${FUNC:-}"
 
