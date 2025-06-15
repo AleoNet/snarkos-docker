@@ -84,7 +84,7 @@ terragrunt apply
 ```
 ### 5. Create key for anf-builder service account
 ```bash
-gcloud iam service-accounts keys create anf-builder-key.json \
+gcloud iam service-accounts keys create anf-builder-sa-key.json \
   --iam-account=anf-builder@YOUR_PROJECT_ID.iam.gserviceaccount.com
 ```
 ### 6. Create GH Secret with anf-builder key 
@@ -165,6 +165,16 @@ docker run -d --name canary-validator \
 ```
 ```bash
 docker logs -f canary-validator
+```
+### CANARY CLIENT WITH SNAPSHOT
+```bash
+docker run -d --name canary-client \
+  -e FUNC=client \
+  -e NETWORK=2 \
+  -e REST_RPS=20 \
+  -e LOGLEVEL=4 \
+  -v /root/.aleo/storage/ledger-2:/aleo/data/storage/ledger-2 \
+  us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/snarkos:canary-latest
 ```
 ---
 ### TESTNET IMAGE

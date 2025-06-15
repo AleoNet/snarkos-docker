@@ -95,7 +95,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./logging
-          file: ./logging/Dockerfile.logging
+          file: ./logging/Dockerfile.apymon
           push: true
           platforms: linux/amd64
           tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/logging:${{ github.event.inputs.image_tag || 'latest' }}
