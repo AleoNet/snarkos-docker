@@ -95,7 +95,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./services
-          file: ./Dockerfile.apimon
+          file: ./services/Dockerfile.apimon
           push: true
           platforms: linux/amd64
           tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/apimon:${{ github.event.inputs.image_tag || 'latest' }}
