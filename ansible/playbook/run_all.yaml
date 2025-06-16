@@ -1,0 +1,8 @@
+- hosts: localhost
+  gather_facts: false
+
+- import_playbook: compose-pb.yaml
+- import_playbook: datadog.yaml
+- import_playbook: apymon.yaml
+- import_playbook: vector.yaml
+- import_playbook: docker-validator-setup.yaml

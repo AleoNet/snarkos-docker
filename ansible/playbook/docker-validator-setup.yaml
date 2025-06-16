@@ -1,0 +1,113 @@
+---
+- name: Setup Validator Node with Docker and GCP Auth
+  hosts: all
+  become: true
+  vars:
+    ansible_root: "{{ playbook_dir }}/.."
+    gcp_project: "aleo-provable-migration-test"
+    docker_image_snarkos: "us-east1-docker.pkg.dev/{{ gcp_project }}/snarkos-containers/{{ env }}/snarkos:{{ env }}-latest"
+    docker_image_logging: "us-east1-docker.pkg.dev/{{ gcp_project }}/snarkos-containers/logging:latest"
+    validator_template: "{{ ansible_root }}/config/templates/validator.service.j2"
+
+  tasks:
+    - name: Install required packages for Docker
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+        update_cache: yes
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker CE
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: yes
+
+    - name: Ensure Docker service is enabled and started
+      systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Remove /root/snarkOS directory
+      file:
+        path: /root/snarkOS
+        state: absent
+
+    - name: Deploy validator.service systemd unit
+      template:
+        src: "{{ validator_template }}"
+        dest: /lib/systemd/system/validator.service
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Copy anf-builder-sa-key.json to remote /root/
+      copy:
+        src: ../secrets/anf-builder-sa-key.json
+        dest: /root/anf-builder-sa-key.json
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Authenticate gcloud with service account
+      shell: |
+        gcloud auth activate-service-account --key-file=/root/anf-builder-sa-key.json
+      environment:
+        CLOUDSDK_CORE_DISABLE_PROMPTS: "1"
+
+    - name: Pull snarkos docker image from GCP Artifact Registry
+      docker_image:
+        name: "{{ docker_image_snarkos }}"
+        source: pull
+
+    - name: Pull logging docker image from GCP Artifact Registry
+      docker_image:
+        name: "{{ docker_image_logging }}"
+        source: pull
+        
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+  
+    # - name: Stop datadog-agent.service
+    #   systemd:
+    #     name: datadog-agent.service
+    #     state: stopped
+
+    # - name: Stop apymon.service
+    #   systemd:
+    #     name: apymon.service
+    #     state: stopped
+
+    # - name: Stop vector.service
+    #   systemd:
+    #     name: vector.service
+    #     state: stopped
+
+    # - name: Stop validator.service
+    #   systemd:
+    #     name: validator.service
+    #     state: stopped
+
+    # - name: Enable and start validator.service
+    #   systemd:
+    #     name: validator.service
+    #     enabled: yes
+    #     state: started

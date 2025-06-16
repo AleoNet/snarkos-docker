@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+
+  {{ env }}-{{ group_name }}:
+    image: us-east1-docker.pkg.dev/{{ gcp_project }}/snarkos-containers/{{ env }}/snarkos:{{ env }}-latest
+    container_name:  {{ env }}-{{ group_name }}
+    restart: unless-stopped
+    env_file:
+      - /aleo/.env
+    ports:
+      - "3000:3000"
+      - "3030:3030"
+      - "4130:4130"
+      - "5000:5000"
+      - "9000:9000"
+      - "9090:9090"
+    command: ["/aleo/entrypoint.sh"]  # if your snarkos image uses an entrypoint
+    networks:
+      - aleo-net
+
+  apymon:
+    image: us-east1-docker.pkg.dev/{{ gcp_project }}/snarkos-containers/logging:latest
+    container_name: apymon
+    restart: unless-stopped
+    volumes:
+      - /aleo/apymon/config.yaml:/aleo/apymon/config.yaml:ro
+    command: ["/aleo/apymon/apymon"]
+    networks:
+      - aleo-net
+
+  vector:
+    image: timberio/vector:0.38.0-alpine
+    container_name: vector
+    restart: unless-stopped
+    volumes:
+      - /etc/vector/vector.yaml:/etc/vector/vector.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro  
+    environment:
+      - VECTOR_VM_HOST={{ inventory_hostname }}
+    networks:
+      - aleo-net
+
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:latest
+    container_name: datadog-agent
+    restart: unless-stopped
+    environment:
+      - DD_API_KEY={{ datadog_key }}   # Replace or use .env
+      - DD_SITE=datadoghq.com
+    volumes:
+      - /etc/datadog-agent/datadog.yaml:/etc/datadog-agent/datadog.yaml:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup:/host/sys/fs/cgroup:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - aleo-net
+
+networks:
+  aleo-net:
+    driver: bridge
+

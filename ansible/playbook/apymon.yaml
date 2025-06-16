@@ -1,0 +1,46 @@
+---
+- name: Install and configure apymon
+  hosts: all
+  become: true
+  serial: 10
+  vars:
+    ansible_root: "{{ playbook_dir }}/.."
+    apymon_config_template: "{{ ansible_root }}/config/templates/apymon.config.j2"
+    gcp_project: "aleo-provable-migration-test"
+  tasks:
+    - name: Load secrets file
+      include_vars:
+        file: "{{ ansible_root }}/secrets/{{ env }}/secrets.yaml"
+        name: secrets
+
+    - name: Load config file
+      include_vars:
+        file: "{{ ansible_root }}/config/config.{{ env }}.yaml"
+        name: config
+
+    - name: Set other variables
+      set_fact:
+        apymon_env: "{{ config.ENVIRONMENT }}"
+        group_name: "{{ config.GROUP_NAME }}"
+        datadog_key: "{{ secrets.DATADOG_KEY }}"
+
+    - name: Ensure /aleo/apymon directory exists
+      file:
+        path: /aleo/apymon
+        state: directory
+        mode: '0755'
+
+    - name: Render apymon.config.yaml
+      template:
+        src: "{{ apymon_config_template }}"
+        dest: /aleo/apymon/config.yaml
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Pull latest logging image
+      community.docker.docker_image:
+        name: us-east1-docker.pkg.dev/{{ gcp_project }}/snarkos-containers/logging
+        tag: latest
+        source: pull
+

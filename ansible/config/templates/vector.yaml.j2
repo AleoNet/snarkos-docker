@@ -1,0 +1,62 @@
+sources:
+  snarkos-containers:
+    type: docker_logs
+    auto_partial_merge: true # Enable to automatically merge multiline logs
+    include_containers: [{{ env }}-{{ group_name }}]
+
+transforms:
+
+  snarkos-trn:
+    type: remap
+    inputs:
+      - snarkos-containers
+    source: |
+      .container_name = .container_name
+      .container_image = .container_image
+      .container_id = .container_id
+      .host = get_env_var("HOSTNAME") ?? get_env_var("HOST") ?? "unknown_host"  # Fallback to "unknown_host" if HOSTNAME is not set
+      .message = .message
+      .timestamp = .timestamp
+      del(.container_created_at)
+      del(.image)
+      del(.source_type)
+      del(.stream)
+      # Accessing and removing keys inside the 'label' field
+      del(.label."com.docker.compose.config-hash")
+      del(.label."com.docker.compose.container-number")
+      del(.label."com.docker.compose.depends_on")
+      del(.label."com.docker.compose.image")
+      del(.label."com.docker.compose.oneoff")
+      del(.label."com.docker.compose.project")
+      del(.label."com.docker.compose.project.config_files")
+      del(.label."com.docker.compose.project.working_dir")
+      del(.label."com.docker.compose.service")
+      del(.label."com.docker.compose.version")
+      del(.maintainer)
+
+  snarkos-vm-host-inject:
+    type: remap
+    inputs:
+      - snarkos-trn
+    source: |
+      .vm_host = get_env_var("VECTOR_VM_HOST") ?? "unknown"
+      .host = .vm_host  # <--- This will make "host:" in Betterstack show your VM hostname!
+
+  snarkos-container-filter:
+    type: filter
+    inputs:
+      - snarkos-vm-host-inject
+    condition: '!(contains(to_string(.message) ?? "", "DEBUG") || contains(to_string(.message) ?? "", "TRACE"))'
+
+sinks:
+  logtail-snk:
+    type: http
+    inputs:
+      - snarkos-container-filter
+    method: post
+    uri: https://in.logs.betterstack.com/
+    encoding:
+      codec: "json"
+    auth:
+      strategy: "bearer"
+      token: {{ betterstack_key }}

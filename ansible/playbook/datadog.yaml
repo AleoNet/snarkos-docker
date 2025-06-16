@@ -1,0 +1,42 @@
+---
+- name: Install and configure Datadog Agent
+  hosts: all
+  become: true
+  serial: 10
+  vars:
+    ansible_root: "{{ playbook_dir }}/.."
+    datadog_yaml_template: "{{ ansible_root }}/config/templates/datadog.yaml.j2"
+
+  tasks:
+    - name: Load secrets file
+      include_vars:
+        file: "../secrets/{{ env }}/secrets.yaml"
+        name: secrets
+    
+    - name: Load config file
+      include_vars:
+        file: "{{ ansible_root }}/config/config.{{ env }}.yaml"
+        name: config
+
+    - name: Set Datadog variables
+      set_fact:
+        datadog_api_key: "{{ secrets.DATADOG_KEY }}"
+        datadog_env: "{{ config.ENVIRONMENT }}"
+
+    - name: Ensure /etc/datadog-agent directory exists
+      file:
+        path: /etc/datadog-agent
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Render datadog.yaml
+      template:
+        src: "{{ datadog_yaml_template }}"
+        dest: /etc/datadog-agent/datadog.yaml
+        owner: root
+        group: root
+        mode: '0644'
+
+

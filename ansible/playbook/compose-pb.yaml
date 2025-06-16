@@ -1,0 +1,59 @@
+---
+- name: Render docker-compose.yaml
+  hosts: all
+  become: true
+  serial: 10
+  vars:
+    ansible_root: "{{ playbook_dir }}/.."
+    compose_template: "{{ ansible_root }}/config/templates/docker-compose.yaml.j2"
+    env_template: "{{ ansible_root }}/config/templates/env.j2"
+    gcp_project: "aleo-provable-migration-test"
+
+  tasks:
+    - name: Load secrets file
+      include_vars:
+        file: "{{ ansible_root }}/secrets/{{ env }}/secrets.yaml"
+        name: secrets
+
+    - name: Load config file
+      include_vars:
+        file: "{{ ansible_root }}/config/config.{{ env }}.yaml"
+        name: config
+
+    - name: Set other variables
+      set_fact:
+        group_name: "{{ config.GROUP_NAME }}"
+        datadog_key: "{{ secrets.DATADOG_KEY }}"
+        slack_team_id: "{{ secrets.SLACK_TEAM_ID }}"
+        slack_webhook_id: "{{ secrets.SLACK_WEBHOOK_ID }}"
+        slack_webhook_token: "{{ secrets.SLACK_WEBHOOK_TOKEN }}"
+        network_id: "{{ config.NETWORK_ID }}"
+        validator_key: "{{ secrets.VALIDATOR_KEY }}"
+        client_key: "{{ secrets.CLIENT_KEY }}"
+        boot_key: "{{ secrets.BOOT_KEY }}"
+        ips_bootstrap_peers: "{{ config.IPS_BOOTSTRAP_PEERS }}"
+        ips_validators: "{{ config.IPS_VALIDATORS }}"
+        ips_validator_peers: "{{ config.IPS_VALIDATOR_PEERS }}"
+        ips_client_peers: "{{ config.IPS_CLIENT_PEERS }}"
+
+    - name: Deploy env file
+      template:
+        src: "{{ env_template }}"
+        dest: /aleo/.env
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Ensure /aleo directory exists
+      file:
+        path: /aleo
+        state: directory
+        mode: '0755'
+
+    - name: Render docker-compose.yaml
+      template:
+        src: "{{ compose_template }}"
+        dest: /aleo/docker-compose.yaml
+        owner: root
+        group: root
+        mode: '0644'
