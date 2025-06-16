@@ -18,7 +18,7 @@ on:
         description: 'Build and push snarkos image (true/false)'
         required: false
         default: 'true'
-      build_logging_image:
+      build_apimon_image:
         description: 'Build and push logging image (true/false)'
         required: false
         default: 'false'
@@ -91,11 +91,11 @@ jobs:
 
       # Conditionally Build and Push Logging Image if set to true
       - name: Build and Push Logging Multi-Arch Image
-        if: ${{ github.event.inputs.build_logging_image == 'true' }}
+        if: ${{ github.event.inputs.build_apimon_image == 'true' }}
         uses: docker/build-push-action@v5
         with:
-          context: ./logging
-          file: ./logging/Dockerfile.apymon
+          context: ./services
+          file: ./servicesDockerfile.apimon
           push: true
           platforms: linux/amd64
-          tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/logging:${{ github.event.inputs.image_tag || 'latest' }}
+          tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/apimon:${{ github.event.inputs.image_tag || 'latest' }}
