@@ -19,26 +19,26 @@ COMMON_PARAMS="--network ${NETWORK} --nocdn --nodisplay --logfile /dev/null --re
 # Add peers based on FUNC
 case "${FUNC}" in
   validator)
-    if [[ -n ${IPS_VALIDATOR_PEERS+a} && -n "${IPS_VALIDATOR_PEERS}" ]]; then
+    if [[ -n "${IPS_VALIDATOR_PEERS:-}" ]]; then
       COMMON_PARAMS="${COMMON_PARAMS} --validators ${IPS_VALIDATORS} --peers ${IPS_VALIDATOR_PEERS}"
     fi
     CMD="/aleo/bin/snarkos start --validator ${COMMON_PARAMS} --metrics"
     ;;
   client)
-    if [[ -n ${IPS_CLIENT_PEERS+a} && -n "${IPS_CLIENT_PEERS}" ]]; then
+    if [[ -n "${IPS_CLIENT_PEERS:-}" ]]; then
       COMMON_PARAMS="${COMMON_PARAMS} --peers ${IPS_CLIENT_PEERS}"
     fi
     CMD="/aleo/bin/snarkos start --client --allow-external-peers ${COMMON_PARAMS}"
     ;;
   boot)
-    if [[ -n ${IPS_BOOTSTRAP_PEERS+a} && -n "${IPS_BOOTSTRAP_PEERS}" ]]; then
+    if [[ -n "${IPS_BOOTSTRAP_PEERS:-}" ]]; then
       COMMON_PARAMS="${COMMON_PARAMS} --peers ${IPS_BOOTSTRAP_PEERS}"
     fi
     CMD="/aleo/bin/snarkos start --client --allow-external-peers ${COMMON_PARAMS}"
     ;;
   *)
     echo "Unknown FUNC: ${FUNC}, defaulting to client"
-    if [[ -n ${IPS_CLIENT_PEERS+a} && -n "${IPS_CLIENT_PEERS}" ]]; then
+    if [[ -n "${IPS_CLIENT_PEERS:-}" ]]; then
       COMMON_PARAMS="${COMMON_PARAMS}"
     fi
     CMD="/aleo/bin/snarkos start --client --allow-external-peers ${COMMON_PARAMS}"
