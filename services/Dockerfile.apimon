@@ -30,6 +30,6 @@ RUN file /aleo/apimon/apimon.deb | grep "Debian binary package" && \
 
 # Optional: expose port if apimon has HTTP server
 # EXPOSE 9090
-CMD ["/aleo/apimon/apimon"]
+CMD ["/aleo/apymon/apymon"]
 
 
