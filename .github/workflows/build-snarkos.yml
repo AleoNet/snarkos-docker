@@ -188,7 +188,7 @@ jobs:
           file: Dockerfile.boot
           push: true
           platforms: linux/amd64
-          tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }}-boot
+          tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }}-latest
           build-args: |
             GIT_REF=${{ github.event.inputs.git_ref }}
             NETWORK=${{ env.NETWORK }}
