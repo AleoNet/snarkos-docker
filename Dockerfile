@@ -64,8 +64,13 @@ RUN mkdir -p bin data
 
 # Install runtime dependencies
 RUN apt update && \
-    apt install -y --no-install-recommends ca-certificates && \
+    apt install -y --no-install-recommends \
+      ca-certificates \
+      libcurl4 \
+      libssl3 \
+      libgcc-s1 && \
     apt clean && rm -rf /var/lib/apt/lists/*
+
     
 
 # Add symlink for .aleo path
