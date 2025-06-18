@@ -135,6 +135,15 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_IMG_BUILDER_KEY }}
+          
+      - name: Map NETWORK_NAME
+        run: |
+          case "${{ github.event.inputs.network_name }}" in
+            mainnet) echo "NETWORK=0" >> $GITHUB_ENV && echo "NETWORK_DIR=mainnet" >> $GITHUB_ENV ;;
+            testnet) echo "NETWORK=1" >> $GITHUB_ENV && echo "NETWORK_DIR=testnet" >> $GITHUB_ENV ;;
+            canary)  echo "NETWORK=2" >> $GITHUB_ENV && echo "NETWORK_DIR=canary" >> $GITHUB_ENV ;;
+            *) echo "Unknown network" && exit 1 ;;
+          esac
 
       - name: Configure Docker
         run: gcloud auth configure-docker us-east1-docker.pkg.dev
