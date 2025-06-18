@@ -72,7 +72,7 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64
-          tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }}
+          tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }}-amd64
           build-args: |
             GIT_REF=${{ github.event.inputs.git_ref }}
             NETWORK=${{ env.NETWORK }}
@@ -142,7 +142,7 @@ jobs:
       - name: Create and Push Multi-Arch Manifest
         run: |
           docker manifest create us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }} \
-            --amend us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }} \
+            --amend us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }}-amd64 \
             --amend us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }}-arm64
 
           docker manifest push us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }}
@@ -181,9 +181,14 @@ jobs:
             *) echo "Unknown network" && exit 1 ;;
           esac
 
-      - name: Build and Push Boot Image
-        run: |
-          docker build \
-            -f Dockerfile.boot \
-            --build-arg GIT_REF=${{ github.event.inputs.git_ref }} \
-            -t us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/boot/snarkos:${{ github.event.inputs.image_tag }} .
+      - name: Build and Push Boot-Patched Image for AMD64
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.boot
+          push: true
+          platforms: linux/amd64
+          tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }}-boot
+          build-args: |
+            GIT_REF=${{ github.event.inputs.git_ref }}
+            NETWORK=${{ env.NETWORK }}
