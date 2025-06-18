@@ -1,10 +1,13 @@
 # Dockerfile
 
 # Use ARG before FROM to allow image override
-ARG IMAGE_NAME=ubuntu:24.04
+
+ARG RUST_IMAGE=lukemathwalker/cargo-chef:latest-rust-1.86
+ARG RUNTIME_IMAGE=debian:bookworm-slim
+#ARG RUNTIME_IMAGE=ubuntu:22.04
 
 # ---------- Builder stage ----------
-FROM ${IMAGE_NAME} AS builder
+FROM ${RUST_IMAGE} AS builder
 
 # Build args
 ARG GIT_REF
@@ -23,16 +26,16 @@ RUN apt update && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
 # Install rustup and Rust toolchain
-RUN dpkgArch="$(dpkg --print-architecture)" && \
-    case "${dpkgArch##*-}" in \
-      amd64) rustArch='x86_64-unknown-linux-gnu' ;; \
-      arm64) rustArch='aarch64-unknown-linux-gnu' ;; \
-      *) echo >&2 "unsupported architecture: ${dpkgArch}"; exit 1 ;; \
-    esac && \
-    curl -sSfL "https://static.rust-lang.org/rustup/dist/${rustArch}/rustup-init" -o rustup-init && \
-    chmod +x rustup-init && \
-    ./rustup-init -y --default-toolchain stable && \
-    rm rustup-init
+# RUN dpkgArch="$(dpkg --print-architecture)" && \
+#     case "${dpkgArch##*-}" in \
+#       amd64) rustArch='x86_64-unknown-linux-gnu' ;; \
+#       arm64) rustArch='aarch64-unknown-linux-gnu' ;; \
+#       *) echo >&2 "unsupported architecture: ${dpkgArch}"; exit 1 ;; \
+#     esac && \
+#     curl -sSfL "https://static.rust-lang.org/rustup/dist/${rustArch}/rustup-init" -o rustup-init && \
+#     chmod +x rustup-init && \
+#     ./rustup-init -y --default-toolchain stable && \
+#     rm rustup-init
 
 # Set correct PATH for cargo
 ENV PATH=/root/.cargo/bin:$PATH
@@ -49,7 +52,7 @@ RUN git checkout "${GIT_REF}" && \
 
 
 # ---------- Final runtime stage ----------
-FROM ${IMAGE_NAME} as runtime
+FROM ${RUNTIME_IMAGE} AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
@@ -57,17 +60,13 @@ SHELL ["/bin/bash", "-c"]
 # Create runtime directories
 VOLUME ["/aleo/data"]
 WORKDIR /aleo
+RUN mkdir -p bin data
 
 # Install runtime dependencies
 RUN apt update && \
-    apt install -y --no-install-recommends \
-      ca-certificates \
-      curl \
-      file \
-      python3 \
-      python3-pip \
-      && \
+    apt install -y --no-install-recommends ca-certificates && \
     apt clean && rm -rf /var/lib/apt/lists/*
+    
 
 # Add symlink for .aleo path
 RUN ln -s /aleo/data /root/.aleo
@@ -75,7 +74,9 @@ RUN ln -s /aleo/data /root/.aleo
 # Copy binary and entrypoint
 COPY --from=builder /usr/src/snarkOS/target/release/snarkos /aleo/bin/snarkos
 COPY entrypoint.sh /aleo/entrypoint.sh
+
+# Make entrypoint executable
 RUN chmod +x /aleo/entrypoint.sh
 
-# Default CMD
-CMD ["/aleo/entrypoint.sh"]
+# Set entrypoint
+ENTRYPOINT [ "/aleo/entrypoint.sh" ]
