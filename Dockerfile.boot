@@ -65,4 +65,4 @@ COPY --from=builder /usr/src/snarkOS/target/release/snarkos /aleo/bin/snarkos
 COPY entrypoint.sh /aleo/entrypoint.sh
 RUN chmod +x /aleo/entrypoint.sh
 
-CMD ["/aleo/entrypoint.sh"]
+ENTRYPOINT [ "/aleo/entrypoint.sh" ]
