@@ -4,7 +4,7 @@ on:
   workflow_dispatch:  # Allow manual triggering
   push:
     paths:
-      - 'apimon/**'
+      - 'service/apimon/**'
       - '.github/workflows/build-apimon.yml'
 
 env:
