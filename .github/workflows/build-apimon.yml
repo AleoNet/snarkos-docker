@@ -41,7 +41,7 @@ jobs:
       - name: Build and Push Apimon Image
         uses: docker/build-push-action@v5
         with:
-          context: ./apimon
+          context: .
           file: ./service/apimon/Dockerfile.apimon
           push: true
           platforms: linux/amd64
