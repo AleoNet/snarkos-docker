@@ -1,10 +1,7 @@
 # Dockerfile
 
-# Use ARG before FROM to allow image override
-
 ARG RUST_IMAGE=lukemathwalker/cargo-chef:latest-rust-1.86
 ARG RUNTIME_IMAGE=debian:bookworm-slim
-#ARG RUNTIME_IMAGE=ubuntu:22.04
 
 # ---------- Builder stage ----------
 FROM ${RUST_IMAGE} AS builder
@@ -24,18 +21,6 @@ RUN apt update && \
       curl git build-essential wget \
       clang gcc libssl-dev make pkg-config xz-utils ca-certificates && \
     apt clean && rm -rf /var/lib/apt/lists/*
-
-# Install rustup and Rust toolchain
-# RUN dpkgArch="$(dpkg --print-architecture)" && \
-#     case "${dpkgArch##*-}" in \
-#       amd64) rustArch='x86_64-unknown-linux-gnu' ;; \
-#       arm64) rustArch='aarch64-unknown-linux-gnu' ;; \
-#       *) echo >&2 "unsupported architecture: ${dpkgArch}"; exit 1 ;; \
-#     esac && \
-#     curl -sSfL "https://static.rust-lang.org/rustup/dist/${rustArch}/rustup-init" -o rustup-init && \
-#     chmod +x rustup-init && \
-#     ./rustup-init -y --default-toolchain stable && \
-#     rm rustup-init
 
 # Set correct PATH for cargo
 ENV PATH=/root/.cargo/bin:$PATH
@@ -78,10 +63,6 @@ RUN ln -s /aleo/data /root/.aleo
 
 # Copy binary and entrypoint
 COPY --from=builder /usr/src/snarkOS/target/release/snarkos /aleo/bin/snarkos
-COPY entrypoint.sh /aleo/entrypoint.sh
-
-# Make entrypoint executable
-RUN chmod +x /aleo/entrypoint.sh
 
 # Set entrypoint
-ENTRYPOINT [ "/aleo/entrypoint.sh" ]
+ENTRYPOINT [ "/aleo/bin/snarkos" ]

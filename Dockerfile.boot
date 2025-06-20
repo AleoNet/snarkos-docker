@@ -35,7 +35,7 @@ RUN git clone -n "${REPO_URL}" snarkOS
 WORKDIR /usr/src/snarkOS
 RUN git checkout "${GIT_REF}"
 
-# ✅ Apply boot-only heartbeat patch
+# Apply boot-only heartbeat patch
 COPY patches/heartbeat-boot.patch /usr/src/snarkOS/
 RUN git apply heartbeat-boot.patch
 
@@ -62,7 +62,6 @@ RUN apt update && \
 RUN ln -s /aleo/data /root/.aleo
 
 COPY --from=builder /usr/src/snarkOS/target/release/snarkos /aleo/bin/snarkos
-COPY entrypoint.sh /aleo/entrypoint.sh
-RUN chmod +x /aleo/entrypoint.sh
 
-ENTRYPOINT [ "/aleo/entrypoint.sh" ]
+# Set entrypoint
+ENTRYPOINT [ "/aleo/bin/snarkos" ]
