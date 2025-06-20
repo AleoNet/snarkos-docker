@@ -27,6 +27,14 @@ us-east1-docker.pkg.dev/<GCP_PROJECT>/snarkos-containers/snarkos:<image_tag>
 ---
 
 # Initial Terraform set up
+### Initialize Cloud SDK
+
+```bash
+gcloud init
+```
+
+Log in and set the default project.
+
 ### 1. Create Terraform Service Account
 
 ```bash
@@ -52,12 +60,26 @@ for role in \
       --role=$role
 done
 ```
-
-### 3. Create Terraform State Bucket
+### 3. Generate Service Account Key
 
 ```bash
-gsutil mb -p <PROJECT_NAME> gs://<PROJECT_NAME>-provable-tfstate
-gsutil versioning set on gs://<PROJECT_NAME>-provable-tfstate
+cd envs/docker-registry-anf
+gcloud iam service-accounts keys create terraform-sa-key.json \
+  --iam-account=terraform-sa@docker-registry-anf.iam.gserviceaccount.com
+```
+
+### 4. Set Environment and Download Secrets
+
+```bash
+cd ../../
+source scripts/set_env.sh
+```
+
+### 5. Create Terraform State Bucket
+
+```bash
+gsutil mb -p <PROJECT_NAME> gs://<PROJECT_NAME>-tfstate
+gsutil versioning set on gs://<PROJECT_NAME>-tfstate
 ```
 
 Update `envs/<env>/terragrunt.hcl`:
@@ -74,20 +96,27 @@ remote_state {
 }
 ```
 
-### 4. Initialize and Apply Terraform
+### 6. Login to GCP project and enable
+```bash
+Cloud Resource Manager API
+Identity and Access Management (IAM) API
+Artifact Registry API
+```
+
+### 5. Initialize and Apply Terraform
 
 ```bash
-cd envs/{test}
+cd envs/docker-registry-anf
 terragrunt init  
 terragrunt plan  
 terragrunt apply
 ```
-### 5. Create key for anf-builder service account
+### 6. Create key for anf-builder service account
 ```bash
 gcloud iam service-accounts keys create anf-builder-sa-key.json \
-  --iam-account=anf-builder@YOUR_PROJECT_ID.iam.gserviceaccount.com
+  --iam-account=anf-builder@docker-registry-anf.iam.gserviceaccount.com
 ```
-### 6. Create GH Secret with anf-builder key 
+### 7. Create GH Secret with anf-builder key 
 `Github Actions > Secrets > GCP_SA_IMG_BUILDER_KEY`
 
 ---

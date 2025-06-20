@@ -44,5 +44,6 @@ jobs:
           context: ./apimon
           file: ./service/apimon/Dockerfile.apimon
           push: true
+          platforms: linux/amd64
           provenance: false
           tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/apimon:${{ env.IMAGE_TAG }}

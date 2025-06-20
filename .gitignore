@@ -46,6 +46,7 @@ override.tf.json
 terraform.rc
 
 terraform-sa-key.json
+anf-builder-sa-key.json
 
 
 **/secrets/*
