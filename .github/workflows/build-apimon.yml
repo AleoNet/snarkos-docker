@@ -42,7 +42,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./apimon
-          file: ./apimon/Dockerfile.apimon
+          file: ./service/apimon/Dockerfile.apimon
           push: true
           provenance: false
           tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/apimon:${{ env.IMAGE_TAG }}
