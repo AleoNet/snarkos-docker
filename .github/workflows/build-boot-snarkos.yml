@@ -1,4 +1,4 @@
-name: Build and Push SnarkOS Boot-Patch Image
+name: Builds and Pushes SnarkOS Boot-Patch Image
 
 on:
   workflow_dispatch:
