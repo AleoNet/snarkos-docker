@@ -18,7 +18,7 @@ on:
         default: 'true'
 
 env:
-  GCP_PROJECT_ID: aleo-provable-migration-test
+  GCP_PROJECT_ID: docker-registry-anf
   GCP_ARTIFACT_REGISTRY_REGION: us-east1
   GCP_ARTIFACT_REPO: snarkos-containers
 

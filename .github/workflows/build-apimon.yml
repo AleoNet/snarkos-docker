@@ -8,7 +8,7 @@ on:
       - '.github/workflows/build-apimon.yml'
 
 env:
-  GCP_PROJECT_ID: aleo-provable-migration-test
+  GCP_PROJECT_ID: docker-registry-anf
   GCP_ARTIFACT_REGISTRY_REGION: us-east1
   GCP_ARTIFACT_REPO: snarkos-containers
   IMAGE_TAG: latest  # or use `date +%Y%m%d%H%M%S` in bash if you want to automate versioning
