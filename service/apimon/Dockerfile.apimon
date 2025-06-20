@@ -22,7 +22,7 @@ RUN apt update && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
 # Copy apimon.deb (ensure this is in build context)
-COPY apimon.deb /aleo/apimon/apimon.deb
+COPY service/apimon/apimon.deb /aleo/apimon/apimon.deb
 
 # Validate and install apimon.deb
 RUN file /aleo/apimon/apimon.deb | grep "Debian binary package" && \
