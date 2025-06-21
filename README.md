@@ -119,6 +119,11 @@ gcloud iam service-accounts keys create anf-builder-sa-key.json \
 ### 7. Create GH Secret with anf-builder key 
 `Github Actions > Secrets > GCP_SA_IMG_BUILDER_KEY`
 
+### 8. Create key for image-reader service account
+```bash
+gcloud iam service-accounts keys create image-reader-sa-key.json \
+  --iam-account=anf-reader@docker-registry-anf.iam.gserviceaccount.com
+```
 ---
 # Terraform Quick start 
 ### 1. Set Environment and Download Secrets
