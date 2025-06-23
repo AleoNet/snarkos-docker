@@ -6,25 +6,55 @@ on:
       git_ref:
         description: 'snarkOS commit SHA or tag'
         required: false
-      image_tag:
-        description: 'Image tag to push'
-        required: false
-      network_name:
-        description: 'Network name: mainnet, testnet, canary'
-        required: false
-      build_snarkos_image:
-        description: 'Build and push snarkos image (true/false)'
-        required: false
-        default: 'true'
 
 env:
   GCP_PROJECT_ID: docker-registry-anf
   GCP_ARTIFACT_REGISTRY_REGION: us-east1
   GCP_ARTIFACT_REPO: snarkos-containers
+  DOCKERHUB_REPO: aleohq/snarkos-test
 
 jobs:
+
+  extractor:
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.release_info.outputs.tag_name }}
+      network: ${{ steps.release_info.outputs.network }}
+    steps:
+      - name: Clone and Extract Info
+        id: release_info
+        run: |
+          git clone https://github.com/ProvableHQ/snarkOS.git snarkos
+          cd snarkos
+          git checkout ${{ github.event.inputs.git_ref }}
+          git fetch --tags
+
+          TAG_NAME=$(git tag --contains ${{ github.event.inputs.git_ref }} | head -n1 || echo "")
+
+          if [[ -z "$TAG_NAME" ]]; then
+            echo "No tag found for commit ${{ github.event.inputs.git_ref }}"
+            exit 1
+          fi
+
+          echo "Extracted tag: $TAG_NAME"
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+          if [[ "$TAG_NAME" == testnet-* ]]; then
+            NETWORK="testnet"
+          elif [[ "$TAG_NAME" == canary-* ]]; then
+            NETWORK="canary"
+          else
+            NETWORK="mainnet"
+          fi
+
+          echo "Extracted network: $NETWORK"
+          echo "network=$NETWORK" >> $GITHUB_OUTPUT
+      
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-amd64:
-    if: ${{ github.event.inputs.build_snarkos_image == 'true' }}
+    needs: extractor
     runs-on: snarkos-amd64-builder  # Customize this label to match your runner setup
     name: Build SnarkOS for AMD64
 
@@ -44,13 +74,19 @@ jobs:
 
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker us-east1-docker.pkg.dev
+        
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Map NETWORK_NAME
         run: |
-          case "${{ github.event.inputs.network_name }}" in
+          case "${{ needs.extractor.outputs.network }}" in
             mainnet) echo "NETWORK=0" >> $GITHUB_ENV && echo "NETWORK_DIR=mainnet" >> $GITHUB_ENV ;;
             testnet) echo "NETWORK=1" >> $GITHUB_ENV && echo "NETWORK_DIR=testnet" >> $GITHUB_ENV ;;
             canary)  echo "NETWORK=2" >> $GITHUB_ENV && echo "NETWORK_DIR=canary" >> $GITHUB_ENV ;;
@@ -65,13 +101,15 @@ jobs:
           push: true
           platforms: linux/amd64
           provenance: false
-          tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }}-amd64
+          tags: |
+            us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ needs.extractor.outputs.tag_name }}-amd64
+            ${{ env.DOCKERHUB_REPO }}:${{ needs.extractor.outputs.tag_name }}-amd64
           build-args: |
             GIT_REF=${{ github.event.inputs.git_ref }}
-            NETWORK=${{ env.NETWORK }}
+            NETWORK=${{ needs.extractor.outputs.network }}
 
   build-arm64:
-    if: ${{ github.event.inputs.build_snarkos_image == 'true' }}
+    needs: extractor
     runs-on: snarkos-arm64-builder  # Customize this label to match your ARM64 runner
     name: Build SnarkOS for ARM64
 
@@ -91,13 +129,19 @@ jobs:
 
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker us-east1-docker.pkg.dev
+        
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Map NETWORK_NAME
         run: |
-          case "${{ github.event.inputs.network_name }}" in
+          case "${{ needs.extractor.outputs.network }}" in
             mainnet) echo "NETWORK=0" >> $GITHUB_ENV && echo "NETWORK_DIR=mainnet" >> $GITHUB_ENV ;;
             testnet) echo "NETWORK=1" >> $GITHUB_ENV && echo "NETWORK_DIR=testnet" >> $GITHUB_ENV ;;
             canary)  echo "NETWORK=2" >> $GITHUB_ENV && echo "NETWORK_DIR=canary" >> $GITHUB_ENV ;;
@@ -111,13 +155,15 @@ jobs:
           push: true
           platforms: linux/arm64
           provenance: false
-          tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }}-arm64
+          tags: |
+            us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ needs.extractor.outputs.tag_name }}-arm64
+            ${{ env.DOCKERHUB_REPO }}:${{ needs.extractor.outputs.tag_name }}-arm64
           build-args: |
             GIT_REF=${{ github.event.inputs.git_ref }}
-            NETWORK=${{ env.NETWORK }}
+            NETWORK=${{ needs.extractor.outputs.network }}
 
   create-manifest:
-    needs: [build-amd64, build-arm64]
+    needs: [extractor, build-amd64, build-arm64]
     runs-on: snarkos-amd64-builder
 
     steps:
@@ -129,9 +175,15 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_IMG_BUILDER_KEY }}
 
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Map NETWORK_NAME
         run: |
-          case "${{ github.event.inputs.network_name }}" in
+          case "${{ needs.extractor.outputs.network }}" in
             mainnet) echo "NETWORK=0" >> $GITHUB_ENV && echo "NETWORK_DIR=mainnet" >> $GITHUB_ENV ;;
             testnet) echo "NETWORK=1" >> $GITHUB_ENV && echo "NETWORK_DIR=testnet" >> $GITHUB_ENV ;;
             canary)  echo "NETWORK=2" >> $GITHUB_ENV && echo "NETWORK_DIR=canary" >> $GITHUB_ENV ;;
@@ -143,10 +195,16 @@ jobs:
 
       - name: Create and Push Multi-Arch Manifest
         run: |
-          docker manifest create us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }} \
-            --amend us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }}-amd64 \
-            --amend us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }}-arm64
+          # GCP Manifest
+          docker manifest create us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ needs.extractor.outputs.tag_name }} \
+            --amend us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ needs.extractor.outputs.tag_name }}-amd64 \
+            --amend us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ needs.extractor.outputs.tag_name }}-arm64
 
-          docker manifest push us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }}
+          docker manifest push us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ needs.extractor.outputs.tag_name }}
 
- 
+          # Docker Hub Manifest
+          docker manifest create ${{ env.DOCKERHUB_REPO }}:${{ needs.extractor.outputs.tag_name }} \
+            --amend ${{ env.DOCKERHUB_REPO }}:${{ needs.extractor.outputs.tag_name }}-amd64 \
+            --amend ${{ env.DOCKERHUB_REPO }}:${{ needs.extractor.outputs.tag_name }}-arm64
+
+          docker manifest push ${{ env.DOCKERHUB_REPO }}:${{ needs.extractor.outputs.tag_name }}
