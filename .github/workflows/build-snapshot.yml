@@ -7,12 +7,6 @@ on:
       - 'service/snapshot/**'
       - '.github/workflows/build-snapshot.yml'
 
-env:
-  GCP_PROJECT_ID: docker-registry-anf
-  GCP_ARTIFACT_REGISTRY_REGION: us-east1
-  GCP_ARTIFACT_REPO: snarkos-containers
-  IMAGE_TAG: latest
-
 jobs:
   build-snapshot:
     runs-on: snarkos-amd64-builder
@@ -20,6 +14,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Export Environment Variables from GitHub Variables
+        run: |
+          echo "GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}" >> $GITHUB_ENV
+          echo "GCP_ARTIFACT_REGISTRY_REGION=${{ vars.GCP_ARTIFACT_REGISTRY_REGION }}" >> $GITHUB_ENV
+          echo "GCP_ARTIFACT_REPO=${{ vars.GCP_ARTIFACT_REPO }}" >> $GITHUB_ENV
+          echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+
+      - name: Print Environment Variables
+        run: |
+          echo "GCP_PROJECT_ID=${GCP_PROJECT_ID}"
+          echo "GCP_ARTIFACT_REGISTRY_REGION=${GCP_ARTIFACT_REGISTRY_REGION}"
+          echo "GCP_ARTIFACT_REPO=${GCP_ARTIFACT_REPO}"
+          echo "IMAGE_TAG=${IMAGE_TAG}"
 
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2

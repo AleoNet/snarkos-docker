@@ -7,12 +7,6 @@ on:
         description: 'snarkOS commit SHA or tag'
         required: false
 
-env:
-  GCP_PROJECT_ID: docker-registry-anf
-  GCP_ARTIFACT_REGISTRY_REGION: us-east1
-  GCP_ARTIFACT_REPO: snarkos-containers
-  DOCKERHUB_REPO: aleohq/snarkos-test
-
 jobs:
 
   extractor:
@@ -60,6 +54,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Export Environment Variables from GitHub Variables
+        run: |
+          echo "GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}" >> $GITHUB_ENV
+          echo "GCP_ARTIFACT_REGISTRY_REGION=${{ vars.GCP_ARTIFACT_REGISTRY_REGION }}" >> $GITHUB_ENV
+          echo "GCP_ARTIFACT_REPO=${{ vars.GCP_ARTIFACT_REPO }}" >> $GITHUB_ENV
+          echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_SNARKOS_REPO }}" >> $GITHUB_ENV
+
+      - name: Print Environment Variables
+        run: |
+          echo "GCP_PROJECT_ID=${GCP_PROJECT_ID}"
+          echo "GCP_ARTIFACT_REGISTRY_REGION=${GCP_ARTIFACT_REGISTRY_REGION}"
+          echo "GCP_ARTIFACT_REPO=${GCP_ARTIFACT_REPO}"
+          echo "DOCKERHUB_REPO=${DOCKERHUB_REPO}"
 
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -116,6 +124,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Export Environment Variables from GitHub Variables
+        run: |
+          echo "GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}" >> $GITHUB_ENV
+          echo "GCP_ARTIFACT_REGISTRY_REGION=${{ vars.GCP_ARTIFACT_REGISTRY_REGION }}" >> $GITHUB_ENV
+          echo "GCP_ARTIFACT_REPO=${{ vars.GCP_ARTIFACT_REPO }}" >> $GITHUB_ENV
+          echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_SNARKOS_REPO }}" >> $GITHUB_ENV
+
+      - name: Print Environment Variables
+        run: |
+          echo "GCP_PROJECT_ID=${GCP_PROJECT_ID}"
+          echo "GCP_ARTIFACT_REGISTRY_REGION=${GCP_ARTIFACT_REGISTRY_REGION}"
+          echo "GCP_ARTIFACT_REPO=${GCP_ARTIFACT_REPO}"
+          echo "DOCKERHUB_REPO=${DOCKERHUB_REPO}"
+
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
@@ -170,6 +192,20 @@ jobs:
       - name: Set up Docker CLI for manifest
         uses: docker/setup-buildx-action@v3
 
+      - name: Export Environment Variables from GitHub Variables
+        run: |
+          echo "GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}" >> $GITHUB_ENV
+          echo "GCP_ARTIFACT_REGISTRY_REGION=${{ vars.GCP_ARTIFACT_REGISTRY_REGION }}" >> $GITHUB_ENV
+          echo "GCP_ARTIFACT_REPO=${{ vars.GCP_ARTIFACT_REPO }}" >> $GITHUB_ENV
+          echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_SNARKOS_REPO }}" >> $GITHUB_ENV
+
+      - name: Print Environment Variables
+        run: |
+          echo "GCP_PROJECT_ID=${GCP_PROJECT_ID}"
+          echo "GCP_ARTIFACT_REGISTRY_REGION=${GCP_ARTIFACT_REGISTRY_REGION}"
+          echo "GCP_ARTIFACT_REPO=${GCP_ARTIFACT_REPO}"
+          echo "DOCKERHUB_REPO=${DOCKERHUB_REPO}"
+          
       - name: Authenticate with GCP
         uses: google-github-actions/auth@v2
         with:
