@@ -28,6 +28,12 @@ apt-get install -y docker.io curl pigz gnupg && \
 apt-get clean && \
 rm -rf /var/lib/apt/lists/*
 
+# Install Docker Compose v2 plugin
+RUN mkdir -p ~/.docker/cli-plugins && \
+    curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose && \
+    chmod +x ~/.docker/cli-plugins/docker-compose
+
+    
 # Define volumes for snapshot and storage
 VOLUME ["/aleo/snapshot.sh"]
 VOLUME ["/aleo/snapshots"]
