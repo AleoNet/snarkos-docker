@@ -6,15 +6,43 @@ on:
       git_ref:
         description: 'snarkOS commit SHA or tag'
         required: true
-      image_tag:
-        description: 'Image tag to push'
-        required: true
-      network_name:
-        description: 'Network name: mainnet, testnet, canary'
-        required: true
 
 jobs:
+
+  extractor:
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.release_info.outputs.tag_name }}
+      network: ${{ steps.release_info.outputs.network }}
+    steps:
+      - name: Clone and Extract Info
+        id: release_info
+        run: |
+          git clone https://github.com/ProvableHQ/snarkOS.git snarkos
+          cd snarkos
+          git checkout ${{ github.event.inputs.git_ref }}
+          git fetch --tags
+
+          TAG_NAME=$(git tag --contains ${{ github.event.inputs.git_ref }} | head -n1 || echo "")
+          if [[ -z "$TAG_NAME" ]]; then
+            echo "No tag found for commit ${{ github.event.inputs.git_ref }}"
+            exit 1
+          fi
+          echo "Extracted tag: $TAG_NAME"
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+          if [[ "$TAG_NAME" == testnet-* ]]; then
+            NETWORK="testnet"
+          elif [[ "$TAG_NAME" == canary-* ]]; then
+            NETWORK="canary"
+          else
+            NETWORK="mainnet"
+          fi
+          echo "Extracted network: $NETWORK"
+          echo "network=$NETWORK" >> $GITHUB_OUTPUT
+
   build-boot:
+    needs: extractor
     runs-on: snarkos-amd64-builder
     name: Build SnarkOS Boot-Patch Image
 
@@ -26,12 +54,6 @@ jobs:
           echo "GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}" >> $GITHUB_ENV
           echo "GCP_ARTIFACT_REGISTRY_REGION=${{ vars.GCP_ARTIFACT_REGISTRY_REGION }}" >> $GITHUB_ENV
           echo "GCP_ARTIFACT_REPO=${{ vars.GCP_ARTIFACT_REPO }}" >> $GITHUB_ENV
-
-      - name: Print Environment Variables
-        run: |
-          echo "GCP_PROJECT_ID=${GCP_PROJECT_ID}"
-          echo "GCP_ARTIFACT_REGISTRY_REGION=${GCP_ARTIFACT_REGISTRY_REGION}"
-          echo "GCP_ARTIFACT_REPO=${GCP_ARTIFACT_REPO}"
 
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -52,7 +74,7 @@ jobs:
 
       - name: Map NETWORK_NAME
         run: |
-          case "${{ github.event.inputs.network_name }}" in
+          case "${{ needs.extractor.outputs.network }}" in
             mainnet) echo "NETWORK=0" >> $GITHUB_ENV && echo "NETWORK_DIR=mainnet" >> $GITHUB_ENV ;;
             testnet) echo "NETWORK=1" >> $GITHUB_ENV && echo "NETWORK_DIR=testnet" >> $GITHUB_ENV ;;
             canary)  echo "NETWORK=2" >> $GITHUB_ENV && echo "NETWORK_DIR=canary" >> $GITHUB_ENV ;;
@@ -67,7 +89,7 @@ jobs:
           push: true
           platforms: linux/amd64
           provenance: false
-          tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ github.event.inputs.image_tag }}-boot
+          tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ needs.extractor.outputs.tag_name }}-boot
           build-args: |
             GIT_REF=${{ github.event.inputs.git_ref }}
             NETWORK=${{ env.NETWORK }}
