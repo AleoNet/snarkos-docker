@@ -22,6 +22,9 @@ RUN curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cl
 
 ENV PATH="/root/google-cloud-sdk/bin:${PATH}"
 
+# --- Install rclone ---
+RUN curl https://rclone.org/install.sh | bash
+
 # Install Docker CLI
 RUN apt-get update && \
 apt-get install -y docker.io curl pigz gnupg && \
@@ -33,7 +36,6 @@ RUN mkdir -p ~/.docker/cli-plugins && \
     curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose && \
     chmod +x ~/.docker/cli-plugins/docker-compose
 
-    
 # Define volumes for snapshot and storage
 VOLUME ["/aleo/snapshot.sh"]
 VOLUME ["/aleo/snapshots"]
