@@ -16,6 +16,7 @@ jobs:
         id: parse
         run: |
           TAG_NAME="${{ github.event.inputs.tag_name }}"
+          echo "Evaluating tag: $TAG_NAME"
           if [[ "$TAG_NAME" == testnet-* ]]; then
             NETWORK=testnet
           elif [[ "$TAG_NAME" == canary-* ]]; then
@@ -25,6 +26,11 @@ jobs:
           fi
           echo "network=$NETWORK" >> $GITHUB_OUTPUT
           echo "NETWORK_DIR=$NETWORK" >> $GITHUB_ENV
+
+      - name: Debug network inference
+        run: |
+          echo "TAG_NAME=${{ github.event.inputs.tag_name }}"
+          echo "Inferred NETWORK=${NETWORK}"
 
       - name: Export Env Vars
         run: |
