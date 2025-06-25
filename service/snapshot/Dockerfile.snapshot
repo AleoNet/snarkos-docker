@@ -1,0 +1,45 @@
+FROM ubuntu:22.04
+
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y \
+    curl \
+    netcat \
+    pigz \
+    gnupg \
+    unzip \
+    rclone \
+    python3 \
+    python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Google Cloud SDK
+RUN curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-471.0.0-linux-x86_64.tar.gz && \
+    tar -xf google-cloud-cli-471.0.0-linux-x86_64.tar.gz && \
+    ./google-cloud-sdk/install.sh -q && \
+    mv google-cloud-sdk /root/google-cloud-sdk && \
+    rm google-cloud-cli-471.0.0-linux-x86_64.tar.gz
+
+ENV PATH="/root/google-cloud-sdk/bin:${PATH}"
+
+# --- Install rclone ---
+RUN curl https://rclone.org/install.sh | bash
+
+# Install Docker CLI
+RUN apt-get update && \
+apt-get install -y docker.io curl pigz gnupg && \
+apt-get clean && \
+rm -rf /var/lib/apt/lists/*
+
+# Install Docker Compose v2 plugin
+RUN mkdir -p ~/.docker/cli-plugins && \
+    curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose && \
+    chmod +x ~/.docker/cli-plugins/docker-compose
+
+# Define volumes for snapshot and storage
+VOLUME ["/aleo/snapshot.sh"]
+VOLUME ["/aleo/snapshots"]
+VOLUME ["/root/.aleo/storage"]
+
+# Set entrypoint
+ENTRYPOINT ["/bin/bash", "/aleo/snapshot.sh"]
