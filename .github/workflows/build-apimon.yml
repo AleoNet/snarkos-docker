@@ -3,8 +3,9 @@ name: Build and Push Apimon Image
 on:
   workflow_dispatch:  # Allow manual triggering
   push:
+    branches:
+      - main
     paths:
-      - 'service/apimon/**'
       - '.github/workflows/build-apimon.yml'
 
 jobs:
