@@ -3,11 +3,11 @@
 ARG RUST_IMAGE=lukemathwalker/cargo-chef:latest-rust-1.86
 ARG RUNTIME_IMAGE=debian:bookworm-slim
 
-# ---------- Builder stage ----------
+# ---------- Snarkos builder stage ----------
 FROM ${RUST_IMAGE} AS builder
 
 # Build args
-ARG GIT_REF
+ARG COMMIT_OR_TAG
 ARG REPO_URL=https://github.com/AleoNet/snarkOS.git
 
 ENV RUSTUP_HOME=/usr/local/rustup \
@@ -32,11 +32,10 @@ RUN git clone -n "${REPO_URL}" snarkOS
 
 # Checkout ref and build
 WORKDIR /usr/src/snarkOS
-RUN git checkout "${GIT_REF}" && \
+RUN git checkout "${COMMIT_OR_TAG}" && \
     cargo build --release --features history
 
-
-# ---------- Final runtime stage ----------
+# ---------- Runtime stage ----------
 FROM ${RUNTIME_IMAGE} AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -57,7 +56,6 @@ RUN apt update && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
     
-
 # Add symlink for .aleo path
 RUN ln -s /aleo/data /root/.aleo
 
@@ -66,3 +64,4 @@ COPY --from=builder /usr/src/snarkOS/target/release/snarkos /aleo/bin/snarkos
 
 # Set entrypoint
 ENTRYPOINT [ "/aleo/bin/snarkos" ]
+CMD ["--help"]

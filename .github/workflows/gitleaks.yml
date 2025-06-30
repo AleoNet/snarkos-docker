@@ -1,0 +1,32 @@
+name: Gitleaks Secret Scan
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - '.github/workflows/build-apimon.yml'
+  #     - '.github/workflows/build-snarkos.yml'
+  #     - '.github/workflows/build-snapshot.yml'
+  #     - '.github/workflows/build-boot-snarkos.yml'
+  #     - '.github/workflows/build-manifest-latest.yml'
+
+jobs:
+  gitleaks-scan:
+    name: Scan for secrets with Gitleaks
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # Only required for Organizations
+        with:
+          args: detect --verbose --redact

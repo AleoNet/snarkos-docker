@@ -1,322 +1,109 @@
 
-# Building and Publishing SnarkOS Docker Image
+# Dockerizing ProvableHQ/snarkOS
 
-### GitHub Actions Build & Push (CI/CD Workflow)
-
-You can also trigger a manual build and push via GitHub Actions.
-
-#### Steps:
-
-1. Go to the **Actions** tab in GitHub.
-2. Select **Build and Push SnarkOS Multi-Arch Docker Image** workflow.
-3. Click **Run workflow**.
-
-#### Parameters:
-
-* `git_ref`: Git commit SHA or tag (example: `5f58ab1 or v3.8.0`)
-* `image_tag`: Desired image tag for Artifact Registry (example: `canary-latest, testnet-latest, mainnet-latest`)
-* `network_name`: One of `mainnet`, `testnet`, `canary`
-
-#### Result:
-
-The image will be pushed to:
-
-```
-us-east1-docker.pkg.dev/<GCP_PROJECT>/snarkos-containers/snarkos:<image_tag>
-```
----
-
-# Initial Terraform set up
-### Initialize Cloud SDK
-
-```bash
-gcloud init
-```
-
-Log in and set the default project.
-
-### 1. Create Terraform Service Account
-
-```bash
-gcloud iam service-accounts create terraform-sa --display-name "Terraform Service Account"
-```
+This repository provides a Docker build setup for [snarkOS](https://github.com/ProvableHQ/snarkOS), a decentralized operating system powering Aleo.  
+It supports multi-architecture builds (x86_64 and ARM64) and is optimized for reproducible image builds.
 
 ---
 
-### 2. Assign IAM Roles
+## Manual Build Instructions
 
-Replace `<PROJECT_NAME>` with your actual project name.
-
-```bash
-for role in \
-  roles/artifactregistry.admin \
-  roles/iam.securityAdmin \
-  roles/iam.workloadIdentityPoolAdmin \
-  roles/iam.serviceAccountAdmin \
-  roles/storage.admin \
-  roles/storage.objectAdmin; do
-    gcloud projects add-iam-policy-binding <PROJECT_NAME> \
-      --member=serviceAccount:terraform-sa@<PROJECT_NAME>.iam.gserviceaccount.com \
-      --role=$role
-done
-```
-### 3. Generate Service Account Key
+### 1. Clone the Repo
 
 ```bash
-cd envs/docker-registry-anf
-gcloud iam service-accounts keys create terraform-sa-key.json \
-  --iam-account=terraform-sa@docker-registry-anf.iam.gserviceaccount.com
+git clone git@github.com:AleoNet/snarkos-docker.git
+cd snarkos-docker
 ```
 
-### 4. Set Environment and Download Secrets
+### 2. Build the Docker Image
 
 ```bash
-cd ../../
-source scripts/set_env.sh
+docker build \
+  --build-arg COMMIT_OR_TAG=<tag-or-commit> \
+  -t snarkos:tag \
+  -f Dockerfile .
 ```
 
-### 5. Create Terraform State Bucket
+**Example:**
 
 ```bash
-gsutil mb -p <PROJECT_NAME> gs://<PROJECT_NAME>-tfstate
-gsutil versioning set on gs://<PROJECT_NAME>-tfstate
+docker build \
+  --build-arg COMMIT_OR_TAG=8c7ea6c \
+  -t v3.8.0 .
 ```
 
-Update `envs/<env>/terragrunt.hcl`:
-
-```hcl
-remote_state {
-  backend = "gcs"
-  config = {
-    bucket   = "<PROJECT_NAME>-provable-tfstate"
-    prefix   = "terraform/state"
-    project  = "<PROJECT_NAME>"
-    location = "<GCP_REGION>"
-  }
-}
-```
-
-### 6. Login to GCP project and enable
-```bash
-Cloud Resource Manager API
-Identity and Access Management (IAM) API
-Artifact Registry API
-```
-
-### 5. Initialize and Apply Terraform
+### 3. Run a Node
 
 ```bash
-cd envs/docker-registry-anf
-terragrunt init  
-terragrunt plan  
-terragrunt apply
-```
-### 6. Create key for anf-builder service account
-```bash
-gcloud iam service-accounts keys create anf-builder-sa-key.json \
-  --iam-account=anf-builder@docker-registry-anf.iam.gserviceaccount.com
-```
-### 7. Create GH Secret with anf-builder key 
-`Github Actions > Secrets > GCP_SA_IMG_BUILDER_KEY`
-
-### 8. Create key for image-reader service account
-```bash
-gcloud iam service-accounts keys create image-reader-sa-key.json \
-  --iam-account=anf-reader@docker-registry-anf.iam.gserviceaccount.com
-```
----
-# Terraform Quick start 
-### 1. Set Environment and Download Secrets
-
-```bash
-./scripts/download_secrets.sh  # Choose: test, canary, testnet, mainnet
-source scripts/set_env.sh  # Choose: test, canary, testnet, mainnet
+docker run --rm -it \
+  -v $HOME/.aleo:/root/.aleo \
+  -p 4133:4133 -p 3030:3030 -p 3031:3031 \
+  snarkos:v3.8.0 \
+  --network 0
 ```
 
 ---
 
-### 2. Initialize and Apply Terraform
+## Verify Image Version
+
+To confirm the binary version inside the container, run:
 
 ```bash
-cd envs/{test}
-terragrunt init  
-terragrunt plan  
-terragrunt apply
+docker run --rm snarkos:v3.8.0 --version
 ```
-# Initial VM setup to pull image
-### 1. Install gcloud
-```bash
-# Add the Cloud SDK distribution URI as a package source
-echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | \
-  sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-
-# Import the Google Cloud public key
-sudo apt-get install -y apt-transport-https ca-certificates gnupg
-curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
-  sudo tee /usr/share/keyrings/cloud.google.gpg > /dev/null
-
-# Update and install the Cloud SDK
-sudo apt-get update && sudo apt-get install -y google-cloud-sdk
-```
-### 2. Authenticate gcloud with GCP service account key
-```bash
-gcloud auth activate-service-account --key-file=<PATH_TO_SA_KEY>
-gcloud auth configure-docker us-east1-docker.pkg.dev
-```
-### 3. Pull docker image
-```bash
-docker pull us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/<NETWORK>/snarkos:<NETWORK>-latest
-```
----
-### CANARY CLIENT - Run docker container as canary client
-```bash
-docker run -d --name canary-client \
-  -e FUNC=client \
-  -e NETWORK=2 \
-  -e REST_RPS=20 \
-  -e LOGLEVEL=4 \
-  -e ALEO_PRIVKEY="" \
-  -e PEERS="<OTHER_CLIENT_AND_VALIDATOR_IPs>:4130" \
-  us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/canary/snarkos:canary-latest
-
-docker logs -f canary-client
-```
-#### Check snarkos version
-```bash
-docker exec -it canary-client /aleo/bin/snarkos --version
-```
-### CANARY VALIDATOR - Run docker container as canary validator
-```bash
-docker run -d --name canary-validator \
-  -e FUNC=validator \
-  -e NETWORK=2 \
-  -e REST_RPS=20 \
-  -e LOGLEVEL=4 \
-  -e ALEO_PRIVKEY="" \
-  -e PEERS="<OTHER_CLIENT_AND_VALIDATOR_IPs>:4130" \
-  -e VALIDATORS="<OTHER_VALIDATOR_IPs>:5000" \
-  us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/canary/snarkos:canary-latest
-```
-```bash
-docker logs -f canary-validator
-```
-### CANARY CLIENT WITH SNAPSHOT
-```bash
-docker run -d --name canary-client \
-  -e FUNC=client \
-  -e NETWORK=2 \
-  -e REST_RPS=20 \
-  -e LOGLEVEL=4 \
-  -v /root/.aleo/storage/ledger-2:/aleo/data/storage/ledger-2 \
-  us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/snarkos:canary-latest
-```
----
-### TESTNET IMAGE
-```bash
-docker pull us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/testnet/snarkos:testnet-latest
-```
-### TESTNET CLIENT
-```bash
-docker run -d --name testnet-client \
-  -e FUNC=client \
-  -e NETWORK=1 \
-  -e REST_RPS=20 \
-  -e LOGLEVEL=4 \
-  -e ALEO_PRIVKEY="" \
-  -e PEERS="<OTHER_CLIENT_AND_VALIDATOR_IPs>:4130" \
-  us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/testnet/snarkos:testnet-latest && docker logs -f testnet-client
-
-docker exec -it testnet-client /aleo/bin/snarkos --version
-```
-
-### TESTNET VALIDATOR
-```bash
-docker run -d --name testnet-validator \
-  -e FUNC=validator \
-  -e NETWORK=1 \
-  -e REST_RPS=20 \
-  -e LOGLEVEL=4 \
-  -e ALEO_PRIVKEY="" \
-  -e PEERS="<OTHER_CLIENT_AND_VALIDATOR_IPs>:4130" \
-  -e VALIDATORS="<OTHER_VALIDATOR_IPs>:5000" \
-  us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/testnet/snarkos:testnet-latest && docker logs -f testnet-validator
-
-docker exec -it testnet-validator /aleo/bin/snarkos --version
-```
----
-### MAINNET IMAGE
-```bash
-docker pull us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/mainnet/snarkos:mainnet-latest
-```
-### MAINNET CLIENT
-```bash
-docker run -d --name mainnet-client \
-  -e FUNC=client \
-  -e NETWORK=0 \
-  -e REST_RPS=20 \
-  -e LOGLEVEL=4 \
-  -e ALEO_PRIVKEY="" \
-  -e PEERS="<OTHER_CLIENT_AND_VALIDATOR_IPs>:4130" \
-  us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/mainnet/snarkos:mainnet-latest && docker logs -f mainnet-client
-
-docker exec -it mainnet-client /aleo/bin/snarkos --version
-```
-
-### MAINNET VALIDATOR
-```bash
-docker run -d --name mainnet-validator \
-  -e FUNC=validator \
-  -e NETWORK=0 \
-  -e REST_RPS=20 \
-  -e LOGLEVEL=4 \
-  -e ALEO_PRIVKEY="" \
-  -e PEERS="<OTHER_CLIENT_AND_VALIDATOR_IPs>:4130" \
-  -e VALIDATORS="<OTHER_VALIDATOR_IPs>:5000" \
-  us-east1-docker.pkg.dev/aleo-provable-migration-test/snarkos-containers/mainnet/snarkos:mainnet-latest && docker logs -f mainnet-validator
-
-docker exec -it mainnet-validtor /aleo/bin/snarkos --version
-```
----
-### Local Build (Developer Workflow)
-
-You can build the SnarkOS Docker image locally using `build.sh`.
-
-#### Usage
-
-```bash
-./build.sh [git_ref] [network_name] [arch_mode]
-```
-
-#### Arguments:
-
-* `git_ref`: Git commit SHA, branch, or tag from snarkOS repo (default: `canary-v3.8.0`)
-* `network_name`: One of `mainnet`, `testnet`, `canary` (default: `canary`)
-* `arch_mode`: `single` (default) or `multi`
-
-#### Examples:
-
-**Fast local test build (safe on laptop):**
-
-```bash
-./build.sh canary-v3.8.0 canary single
-```
-
-**Full multi-arch build and push to GCP Artifact Registry:**
-
-```bash
-./build.sh canary-v3.8.0 canary multi
-```
-
-The image will be pushed to:
-
-```
-us-east1-docker.pkg.dev/<GCP_PROJECT>/snarkos-containers/snarkos:<git_ref>-<network_name>
-```
-### Notes:
-
-* **Local single arch build** is much faster for testing (no QEMU overhead).
-* Use **multi arch build** when ready to publish official builds.
-* `entrypoint.sh` changes will rebuild fast (no full Rust rebuild required).
-* If `GIT_REF` changes, or snarkOS code changes → full Rust rebuild will occur.
 
 ---
+
+## Image Structure
+
+The Dockerfile performs a two-stage build:
+- **Builder stage** uses `cargo` to compile snarkOS with specific features.
+- **Runtime stage** installs minimal runtime dependencies and copies the final binary.
+
+---
+
+## Multi-Arch Support
+
+This repo supports native or emulated builds for:
+- `x86_64` (Linux)
+- `arm64` (Raspberry Pi, M1/M2 Macs, cloud ARM VMs)
+
+To build cross-platform images using `buildx`, see [buildx docs](https://docs.docker.com/build/buildx/working-with-buildx/).
+
+---
+
+## Security & CI
+
+- This repository includes a Gitleaks scanner to detect secrets in PRs.
+- Branch protection rules enforce pull requests for changes to `main`.
+
+---
+
+## License & Attribution
+
+This repo wraps the official [snarkOS](https://github.com/ProvableHQ/snarkOS) and is maintained by the community.
+
+Please refer to the original repo for protocol-level documentation.
+
+
+---
+
+## Prebuilt Docker Images
+
+All builds from [ProvableHQ/snarkOS releases](https://github.com/ProvableHQ/snarkOS/tags)  
+are automatically built and published to Docker Hub:
+
+👉 **[https://hub.docker.com/r/aleohq/snarkos](https://hub.docker.com/r/aleohq/snarkos)**
+
+### Usage Example
+
+```bash
+docker pull aleohq/snarkos:v3.8.0
+docker run --rm aleohq/snarkos:v3.8.0 --version
+```
+
+You can also run a mainnet node directly:
+
+```bash
+docker run --rm -it   -v $HOME/.aleo:/root/.aleo   -p 4133:4133 -p 3030:3030 -p 3031:3031   aleohq/snarkos:v3.8.0   --network mainnet
+```
