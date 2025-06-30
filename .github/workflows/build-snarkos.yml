@@ -3,7 +3,7 @@ name: Build and Push SnarkOS Multi-Arch Docker Image
 on:
   workflow_dispatch:
     inputs:
-      git_ref:
+      commit_or_tag:
         description: 'snarkOS commit SHA or tag'
         required: false
       tag_name:
@@ -15,6 +15,8 @@ jobs:
 
   extractor:
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+
     outputs:
       tag_name: ${{ steps.release_info.outputs.tag_name }}
       network: ${{ steps.release_info.outputs.network }}
@@ -24,17 +26,17 @@ jobs:
         run: |
           git clone https://github.com/ProvableHQ/snarkOS.git snarkos
           cd snarkos
-          git checkout ${{ github.event.inputs.git_ref }}
+          git checkout ${{ github.event.inputs.commit_or_tag }}
           git fetch --tags
 
           TAG_NAME="${{ github.event.inputs.tag_name }}"
 
           if [[ -z "$TAG_NAME" ]]; then
-            TAG_NAME=$(git tag --contains ${{ github.event.inputs.git_ref }} | head -n1 || echo "")
+            TAG_NAME=$(git tag --contains ${{ github.event.inputs.commit_or_tag }} | head -n1 || echo "")
           fi
 
           if [[ -z "$TAG_NAME" ]]; then
-            echo "No tag found for commit ${{ github.event.inputs.git_ref }}"
+            echo "No tag found for commit ${{ github.event.inputs.commit_or_tag }}"
             exit 1
           fi
 
@@ -69,13 +71,6 @@ jobs:
           echo "GCP_ARTIFACT_REGISTRY_REGION=${{ vars.GCP_ARTIFACT_REGISTRY_REGION }}" >> $GITHUB_ENV
           echo "GCP_ARTIFACT_REPO=${{ vars.GCP_ARTIFACT_REPO }}" >> $GITHUB_ENV
           echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_SNARKOS_REPO }}" >> $GITHUB_ENV
-
-      - name: Print Environment Variables
-        run: |
-          echo "GCP_PROJECT_ID=${GCP_PROJECT_ID}"
-          echo "GCP_ARTIFACT_REGISTRY_REGION=${GCP_ARTIFACT_REGISTRY_REGION}"
-          echo "GCP_ARTIFACT_REPO=${GCP_ARTIFACT_REPO}"
-          echo "DOCKERHUB_REPO=${DOCKERHUB_REPO}"
 
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -121,7 +116,7 @@ jobs:
             us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ needs.extractor.outputs.tag_name }}-amd64
             ${{ env.DOCKERHUB_REPO }}:${{ needs.extractor.outputs.tag_name }}-amd64
           build-args: |
-            GIT_REF=${{ github.event.inputs.git_ref }}
+            COMMIT_OR_TAG=${{ github.event.inputs.commit_or_tag }}
             NETWORK=${{ needs.extractor.outputs.network }}
 
   build-arm64:
@@ -138,13 +133,6 @@ jobs:
           echo "GCP_ARTIFACT_REGISTRY_REGION=${{ vars.GCP_ARTIFACT_REGISTRY_REGION }}" >> $GITHUB_ENV
           echo "GCP_ARTIFACT_REPO=${{ vars.GCP_ARTIFACT_REPO }}" >> $GITHUB_ENV
           echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_SNARKOS_REPO }}" >> $GITHUB_ENV
-
-      - name: Print Environment Variables
-        run: |
-          echo "GCP_PROJECT_ID=${GCP_PROJECT_ID}"
-          echo "GCP_ARTIFACT_REGISTRY_REGION=${GCP_ARTIFACT_REGISTRY_REGION}"
-          echo "GCP_ARTIFACT_REPO=${GCP_ARTIFACT_REPO}"
-          echo "DOCKERHUB_REPO=${DOCKERHUB_REPO}"
 
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -189,7 +177,7 @@ jobs:
             us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ needs.extractor.outputs.tag_name }}-arm64
             ${{ env.DOCKERHUB_REPO }}:${{ needs.extractor.outputs.tag_name }}-arm64
           build-args: |
-            GIT_REF=${{ github.event.inputs.git_ref }}
+            COMMIT_OR_TAG=${{ github.event.inputs.commit_or_tag }}
             NETWORK=${{ needs.extractor.outputs.network }}
 
   create-manifest:
@@ -206,13 +194,6 @@ jobs:
           echo "GCP_ARTIFACT_REGISTRY_REGION=${{ vars.GCP_ARTIFACT_REGISTRY_REGION }}" >> $GITHUB_ENV
           echo "GCP_ARTIFACT_REPO=${{ vars.GCP_ARTIFACT_REPO }}" >> $GITHUB_ENV
           echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_SNARKOS_REPO }}" >> $GITHUB_ENV
-
-      - name: Print Environment Variables
-        run: |
-          echo "GCP_PROJECT_ID=${GCP_PROJECT_ID}"
-          echo "GCP_ARTIFACT_REGISTRY_REGION=${GCP_ARTIFACT_REGISTRY_REGION}"
-          echo "GCP_ARTIFACT_REPO=${GCP_ARTIFACT_REPO}"
-          echo "DOCKERHUB_REPO=${DOCKERHUB_REPO}"
           
       - name: Authenticate with GCP
         uses: google-github-actions/auth@v2

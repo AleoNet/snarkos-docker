@@ -3,7 +3,7 @@ name: Builds and Pushes SnarkOS Boot-Patch Image
 on:
   workflow_dispatch:
     inputs:
-      git_ref:
+      commit_or_tag:
         description: 'snarkOS commit SHA or tag'
         required: true
 
@@ -11,6 +11,7 @@ jobs:
 
   extractor:
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     outputs:
       tag_name: ${{ steps.release_info.outputs.tag_name }}
       network: ${{ steps.release_info.outputs.network }}
@@ -20,12 +21,12 @@ jobs:
         run: |
           git clone https://github.com/ProvableHQ/snarkOS.git snarkos
           cd snarkos
-          git checkout ${{ github.event.inputs.git_ref }}
+          git checkout ${{ github.event.inputs.commit_or_tag }}
           git fetch --tags
 
-          TAG_NAME=$(git tag --contains ${{ github.event.inputs.git_ref }} | head -n1 || echo "")
+          TAG_NAME=$(git tag --contains ${{ github.event.inputs.commit_or_tag }} | head -n1 || echo "")
           if [[ -z "$TAG_NAME" ]]; then
-            echo "No tag found for commit ${{ github.event.inputs.git_ref }}"
+            echo "No tag found for commit ${{ github.event.inputs.commit_or_tag }}"
             exit 1
           fi
           echo "Extracted tag: $TAG_NAME"
@@ -45,6 +46,7 @@ jobs:
     needs: extractor
     runs-on: snarkos-amd64-builder
     name: Build SnarkOS Boot-Patch Image
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
       - uses: actions/checkout@v4
@@ -91,5 +93,5 @@ jobs:
           provenance: false
           tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ needs.extractor.outputs.tag_name }}-boot
           build-args: |
-            GIT_REF=${{ github.event.inputs.git_ref }}
+            COMMIT_OR_TAG=${{ github.event.inputs.commit_or_tag }}
             NETWORK=${{ env.NETWORK }}

@@ -2,7 +2,6 @@ name: Build and Push Snapshot Image
 
 on:
   workflow_dispatch:
-  push:
     branches:
       - main
     paths:
@@ -12,6 +11,7 @@ jobs:
   build-snapshot:
     runs-on: snarkos-amd64-builder
     name: Build Snapshot Image
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
       - uses: actions/checkout@v4
@@ -22,13 +22,6 @@ jobs:
           echo "GCP_ARTIFACT_REGISTRY_REGION=${{ vars.GCP_ARTIFACT_REGISTRY_REGION }}" >> $GITHUB_ENV
           echo "GCP_ARTIFACT_REPO=${{ vars.GCP_ARTIFACT_REPO }}" >> $GITHUB_ENV
           echo "IMAGE_TAG=latest" >> $GITHUB_ENV
-
-      - name: Print Environment Variables
-        run: |
-          echo "GCP_PROJECT_ID=${GCP_PROJECT_ID}"
-          echo "GCP_ARTIFACT_REGISTRY_REGION=${GCP_ARTIFACT_REGISTRY_REGION}"
-          echo "GCP_ARTIFACT_REPO=${GCP_ARTIFACT_REPO}"
-          echo "IMAGE_TAG=${IMAGE_TAG}"
 
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2

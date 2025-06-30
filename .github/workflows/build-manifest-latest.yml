@@ -3,17 +3,18 @@ name: Push Multi-Arch Latest Manifest
 on:
   workflow_dispatch:
     inputs:
-      git_ref:
+      commit_or_tag:
         description: 'Git commit SHA or tag to base :latest off'
         required: true
       tag_name:
-        description: 'Optional image tag (e.g. testnet-v1.2.3) to use instead of resolving from git_ref'
+        description: 'Optional image tag (e.g. testnet-v1.2.3) to use instead of resolving from commit_or_tag'
         required: false
         default: ''
 
 jobs:
   extractor:
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     outputs:
       tag_name: ${{ steps.release_info.outputs.tag_name }}
       network: ${{ steps.release_info.outputs.network }}
@@ -21,18 +22,18 @@ jobs:
       - name: Clone and resolve tag/network
         id: release_info
         run: |
-          git clone https://github.com/ProvableHQ/snarkOS.git
+          git clone https://github.com/ProvableHQ/snarkOS.git snarkos
           cd snarkos
           git fetch --tags
-          git checkout ${{ github.event.inputs.git_ref }}
+          git checkout ${{ github.event.inputs.commit_or_tag }}
 
           TAG_NAME="${{ github.event.inputs.tag_name }}"
           if [[ -z "$TAG_NAME" ]]; then
-            TAG_NAME=$(git describe --tags --exact-match 2>/dev/null || git tag --contains ${{ github.event.inputs.git_ref }} | head -n1 || echo "")
+            TAG_NAME=$(git describe --tags --exact-match 2>/dev/null || git tag --contains ${{ github.event.inputs.commit_or_tag }} | head -n1 || echo "")
           fi
 
           if [[ -z "$TAG_NAME" ]]; then
-            echo "No tag found for commit ${{ github.event.inputs.git_ref }}"
+            echo "No tag found for commit ${{ github.event.inputs.commit_or_tag }}"
             exit 1
           fi
 
@@ -52,7 +53,9 @@ jobs:
 
   push-manifest:
     needs: extractor
-    runs-on: snarkos-amd64-builder
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    
     steps:
       - name: Export Environment Variables
         run: |

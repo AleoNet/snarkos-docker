@@ -2,7 +2,7 @@ ARG IMAGE_NAME=ubuntu:24.04
 
 FROM ${IMAGE_NAME} AS builder
 
-ARG GIT_REF
+ARG COMMIT_OR_TAG
 ARG REPO_URL=https://github.com/AleoNet/snarkOS.git
 
 ENV RUSTUP_HOME=/usr/local/rustup \
@@ -33,7 +33,7 @@ WORKDIR /usr/src
 RUN git clone -n "${REPO_URL}" snarkOS
 
 WORKDIR /usr/src/snarkOS
-RUN git checkout "${GIT_REF}"
+RUN git checkout "${COMMIT_OR_TAG}"
 
 # Apply boot-only heartbeat patch
 COPY patches/heartbeat-boot.patch /usr/src/snarkOS/
