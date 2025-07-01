@@ -85,7 +85,6 @@ This repo wraps the official [snarkOS](https://github.com/ProvableHQ/snarkOS) an
 
 Please refer to the original repo for protocol-level documentation.
 
-
 ---
 
 ## Prebuilt Docker Images
