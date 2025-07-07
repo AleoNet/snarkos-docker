@@ -19,7 +19,3 @@ index a1ce8296a..fee3b7d73 100644
      /// The amount of time an IP address is prohibited from connecting.
 -    const IP_BAN_TIME_IN_SECS: u64 = 300;
 +    const IP_BAN_TIME_IN_SECS: u64 = 600;
-
-     /// Handles the heartbeat request.
-     fn heartbeat(&self) {
-
