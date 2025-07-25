@@ -1,6 +1,6 @@
 # Dockerfile
 
-ARG RUST_IMAGE=lukemathwalker/cargo-chef:latest-rust-1.86-bookworm
+ARG RUST_IMAGE=lukemathwalker/cargo-chef:latest-rust-1.86-bullseye
 ARG RUNTIME_IMAGE=debian:bookworm-slim
 
 # ---------- Snarkos builder stage ----------
