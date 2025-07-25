@@ -13,7 +13,8 @@ ENV RUSTUP_HOME=/usr/local/rustup \
 RUN apt update && \
     apt install -y --no-install-recommends \
       curl git build-essential wget \
-      clang gcc libssl-dev make pkg-config xz-utils ca-certificates && \
+      clang lld binutils \
+      gcc libssl-dev make pkg-config xz-utils ca-certificates && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
 RUN dpkgArch="$(dpkg --print-architecture)" && \
