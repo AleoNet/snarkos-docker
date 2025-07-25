@@ -23,6 +23,10 @@ RUN apt update && \
       gcc libssl-dev make pkg-config xz-utils ca-certificates && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
+RUN which ld       # Should print a path like /usr/bin/ld
+RUN which cc       # Should print a path like /usr/bin/cc
+RUN which lld      # Should print a path like /usr/bin/lld (if using explicitly)
+
 # Set correct PATH for cargo
 ENV PATH=/root/.cargo/bin:$PATH
 
