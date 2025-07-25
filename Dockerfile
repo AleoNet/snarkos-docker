@@ -19,7 +19,7 @@ ENV RUSTUP_HOME=/usr/local/rustup \
 RUN apt update && \
     apt install -y --no-install-recommends \
       curl git build-essential wget \
-      clang gcc libssl-dev make pkg-config xz-utils ca-certificates && \
+      clang lld gcc libssl-dev make pkg-config xz-utils ca-certificates && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
 # Set correct PATH for cargo
