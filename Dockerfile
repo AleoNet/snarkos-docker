@@ -69,7 +69,7 @@ RUN apt update && \
       tmux \
       xz-utils \
       ufw \
-      lld \
+      lld && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
 # Add symlink for .aleo path
