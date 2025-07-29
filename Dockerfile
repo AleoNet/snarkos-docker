@@ -1,7 +1,7 @@
 # Dockerfile
 
 ARG RUST_IMAGE=lukemathwalker/cargo-chef:latest-rust-1.86-bullseye
-ARG RUNTIME_IMAGE=debian:bookworm-slim
+ARG RUNTIME_IMAGE=ubuntu:22.04
 
 # ---------- Snarkos builder stage ----------
 FROM ${RUST_IMAGE} AS builder
@@ -54,14 +54,24 @@ RUN mkdir -p bin data
 # Install runtime dependencies
 RUN apt update && \
     apt install -y --no-install-recommends \
-      ca-certificates \
-      libcurl4 \
-      libssl3 \
-      libssl1.1 \
-      libgcc-s1 && \
+      curl \
+      git \
+      wget \
+      vim \
+      acl \
+      build-essential \
+      clang \
+      gcc \
+      libssl-dev \
+      llvm \
+      make \
+      pkg-config \
+      tmux \
+      xz-utils \
+      ufw \
+      lld \
     apt clean && rm -rf /var/lib/apt/lists/*
 
-    
 # Add symlink for .aleo path
 RUN ln -s /aleo/data /root/.aleo
 
