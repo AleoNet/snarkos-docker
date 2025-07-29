@@ -57,6 +57,7 @@ RUN apt update && \
       ca-certificates \
       libcurl4 \
       libssl3 \
+      libssl1.1 \
       libgcc-s1 && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
