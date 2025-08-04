@@ -3,10 +3,13 @@ name: Builds and Pushes SnarkOS Boot-Patch Image
 on:
   workflow_dispatch:
     inputs:
-      commit_or_tag:
-        description: 'snarkOS commit SHA or tag'
+      commit_sha:
+        description: 'snarkOS commit SHA'
         required: true
-
+      tag_name:
+        description: 'Optional tag name to use for the image'
+        required: false
+        default: ''
 jobs:
 
   extractor:
@@ -24,7 +27,10 @@ jobs:
           git checkout ${{ github.event.inputs.commit_or_tag }}
           git fetch --tags
 
-          TAG_NAME=$(git tag --contains ${{ github.event.inputs.commit_or_tag }} | head -n1 || echo "")
+          TAG_NAME="${{ github.event.inputs.tag_name }}"
+          if [[ -z "$TAG_NAME" ]]; then
+            TAG_NAME=$(git tag --contains ${{ github.event.inputs.commit_or_tag }} | head -n1 || echo "")
+          fi
           if [[ -z "$TAG_NAME" ]]; then
             echo "No tag found for commit ${{ github.event.inputs.commit_or_tag }}"
             exit 1
