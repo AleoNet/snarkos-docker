@@ -99,5 +99,5 @@ jobs:
           provenance: false
           tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ needs.extractor.outputs.tag_name }}-boot
           build-args: |
-            commit_sha=${{ github.event.inputs.commit_sha }}
+            COMMIT_OR_TAG=${{ github.event.inputs.commit_sha }}
             NETWORK=${{ env.NETWORK }}
