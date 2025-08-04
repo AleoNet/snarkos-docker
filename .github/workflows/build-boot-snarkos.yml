@@ -24,15 +24,15 @@ jobs:
         run: |
           git clone https://github.com/ProvableHQ/snarkOS.git snarkos
           cd snarkos
-          git checkout ${{ github.event.inputs.commit_or_tag }}
+          git checkout ${{ github.event.inputs.commit_sha }}
           git fetch --tags
 
           TAG_NAME="${{ github.event.inputs.tag_name }}"
           if [[ -z "$TAG_NAME" ]]; then
-            TAG_NAME=$(git tag --contains ${{ github.event.inputs.commit_or_tag }} | head -n1 || echo "")
+            TAG_NAME=$(git tag --contains ${{ github.event.inputs.commit_sha }} | head -n1 || echo "")
           fi
           if [[ -z "$TAG_NAME" ]]; then
-            echo "No tag found for commit ${{ github.event.inputs.commit_or_tag }}"
+            echo "No tag found for commit ${{ github.event.inputs.commit_sha }}"
             exit 1
           fi
           echo "Extracted tag: $TAG_NAME"
@@ -99,5 +99,5 @@ jobs:
           provenance: false
           tags: us-east1-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REPO }}/${{ env.NETWORK_DIR }}/snarkos:${{ needs.extractor.outputs.tag_name }}-boot
           build-args: |
-            COMMIT_OR_TAG=${{ github.event.inputs.commit_or_tag }}
+            commit_sha=${{ github.event.inputs.commit_sha }}
             NETWORK=${{ env.NETWORK }}
