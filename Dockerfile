@@ -1,10 +1,9 @@
 # Dockerfile
 
-ARG RUST_IMAGE=lukemathwalker/cargo-chef:latest-rust-1.86
-ARG RUNTIME_IMAGE=debian:bookworm-slim
+ARG IMAGE_NAME=ubuntu:24.04
 
 # ---------- Snarkos builder stage ----------
-FROM ${RUST_IMAGE} AS builder
+FROM ${IMAGE_NAME} AS builder
 
 # Build args
 ARG COMMIT_OR_TAG
@@ -19,24 +18,33 @@ ENV RUSTUP_HOME=/usr/local/rustup \
 RUN apt update && \
     apt install -y --no-install-recommends \
       curl git build-essential wget \
-      clang gcc libssl-dev make pkg-config xz-utils ca-certificates && \
+      clang lld binutils \
+      gcc libssl-dev make pkg-config xz-utils ca-certificates && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
-# Set correct PATH for cargo
+RUN dpkgArch="$(dpkg --print-architecture)" && \
+    case "${dpkgArch##*-}" in \
+      amd64) rustArch='x86_64-unknown-linux-gnu' ;; \
+      arm64) rustArch='aarch64-unknown-linux-gnu' ;; \
+      *) echo >&2 "unsupported architecture: ${dpkgArch}"; exit 1 ;; \
+    esac && \
+    curl -sSfL "https://static.rust-lang.org/rustup/dist/${rustArch}/rustup-init" -o rustup-init && \
+    chmod +x rustup-init && \
+    ./rustup-init -y --default-toolchain stable && \
+    rm rustup-init
+
 ENV PATH=/root/.cargo/bin:$PATH
 
 # Clone repo and build
 WORKDIR /usr/src
+RUN git clone -n "${REPO_URL}" snarkOS
 
-RUN git clone -n "${REPO_URL}" snarkOS 
-
-# Checkout ref and build
 WORKDIR /usr/src/snarkOS
 RUN git checkout "${COMMIT_OR_TAG}" && \
     cargo build --release --features history
 
 # ---------- Runtime stage ----------
-FROM ${RUNTIME_IMAGE} AS runtime
+FROM ${IMAGE_NAME} as runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
@@ -44,18 +52,17 @@ SHELL ["/bin/bash", "-c"]
 # Create runtime directories
 VOLUME ["/aleo/data"]
 WORKDIR /aleo
-RUN mkdir -p bin data
 
 # Install runtime dependencies
 RUN apt update && \
     apt install -y --no-install-recommends \
       ca-certificates \
-      libcurl4 \
-      libssl3 \
-      libgcc-s1 && \
+      curl \
+      file \
+      python3 \
+      python3-pip && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
-    
 # Add symlink for .aleo path
 RUN ln -s /aleo/data /root/.aleo
 
