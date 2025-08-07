@@ -1,4 +1,4 @@
-name: Build and Push No-History SnarkOS Docker Image
+name: Build and Push History and Telemetry SnarkOS Docker Image
 
 on:
   workflow_dispatch:
