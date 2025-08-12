@@ -27,7 +27,7 @@ jobs:
           git fetch --tags
           git checkout ${{ github.event.inputs.commit_or_tag }}
 
-          TAG_NAME="${{ github.event.inputs.tag_name }}"
+          TAG_NAME="${{ github.event.inputs.tag_name }}-telemetry"
           if [[ -z "$TAG_NAME" ]]; then
             TAG_NAME=$(git describe --tags --exact-match 2>/dev/null || git tag --contains ${{ github.event.inputs.commit_or_tag }} | head -n1 || echo "")
           fi
