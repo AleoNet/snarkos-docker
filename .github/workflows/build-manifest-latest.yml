@@ -6,10 +6,7 @@ on:
       commit_or_tag:
         description: 'Git commit SHA or tag to base :latest off'
         required: true
-      tag_name:
-        description: 'Optional image tag (e.g. testnet-v1.2.3) to use instead of resolving from commit_or_tag'
-        required: false
-        default: ''
+
 
 jobs:
   extractor:
@@ -68,8 +65,6 @@ jobs:
         run: |
           case "${{ needs.extractor.outputs.network }}" in
             mainnet) echo "NETWORK_DIR=mainnet" >> $GITHUB_ENV ;;
-            testnet) echo "NETWORK_DIR=testnet" >> $GITHUB_ENV ;;
-            canary)  echo "NETWORK_DIR=canary" >> $GITHUB_ENV ;;
             *) echo "Unknown network" && exit 1 ;;
           esac
 
