@@ -108,7 +108,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./service/history-telemetry/Dockerfile
+          file: ./service/snarkos-history-telemetry/Dockerfile
           push: true
           platforms: linux/amd64
           provenance: false
