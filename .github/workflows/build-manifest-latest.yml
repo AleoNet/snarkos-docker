@@ -77,21 +77,38 @@ jobs:
 
     - name: Create and Push Multi-Arch Manifest
       run: |
-        BASE_TAG="${{ needs.extractor.outputs.telemetry_tag }}"
+        # Inputs from extractor
+        BASE_TAG="${{ needs.extractor.outputs.telemetry_tag }}"  # e.g. v4.1.0-telemetry
+        PLAIN_TAG="${{ needs.extractor.outputs.tag_name }}"      # e.g. v4.1.0
 
-        # GCP manifest
+        # -------- GCP --------
+        REG="${{ vars.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPO}/${NETWORK_DIR}"
+
+        # Create v4.1.0 (plain) manifest from telemetry images
         docker manifest create \
-          ${GCP_ARTIFACT_REGISTRY_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPO}/${NETWORK_DIR}/snarkos:latest \
-          --amend ${GCP_ARTIFACT_REGISTRY_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPO}/${NETWORK_DIR}/snarkos:${BASE_TAG}-amd64 \
-          --amend ${GCP_ARTIFACT_REGISTRY_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPO}/${NETWORK_DIR}/snarkos:${BASE_TAG}-arm64
+          ${REG}/snarkos:${PLAIN_TAG} \
+          --amend ${REG}/snarkos:${BASE_TAG}-amd64 \
+          --amend ${REG}/snarkos:${BASE_TAG}-arm64
+        docker manifest push ${REG}/snarkos:${PLAIN_TAG}
 
-        docker manifest push \
-          ${GCP_ARTIFACT_REGISTRY_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPO}/${NETWORK_DIR}/snarkos:latest
+        # Also tag/push :latest pointing to the same two images
+        docker manifest create \
+          ${REG}/snarkos:latest \
+          --amend ${REG}/snarkos:${BASE_TAG}-amd64 \
+          --amend ${REG}/snarkos:${BASE_TAG}-arm64
+        docker manifest push ${REG}/snarkos:latest
 
-        # Docker Hub manifest
+        # -------- Docker Hub --------
+        # Create v4.1.0 (plain) manifest
+        docker manifest create \
+          ${DOCKERHUB_REPO}:${PLAIN_TAG} \
+          --amend ${DOCKERHUB_REPO}:${BASE_TAG}-amd64 \
+          --amend ${DOCKERHUB_REPO}:${BASE_TAG}-arm64
+        docker manifest push ${DOCKERHUB_REPO}:${PLAIN_TAG}
+
+        # Also tag/push :latest
         docker manifest create \
           ${DOCKERHUB_REPO}:latest \
           --amend ${DOCKERHUB_REPO}:${BASE_TAG}-amd64 \
           --amend ${DOCKERHUB_REPO}:${BASE_TAG}-arm64
-
         docker manifest push ${DOCKERHUB_REPO}:latest
