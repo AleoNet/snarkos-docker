@@ -6,10 +6,7 @@ on:
       commit_or_tag:
         description: 'Git commit SHA or tag to base :latest off'
         required: true
-      tag_name:
-        description: 'Optional image tag (e.g. testnet-v1.2.3) to use instead of resolving from commit_or_tag'
-        required: false
-        default: ''
+
 
 jobs:
   extractor:
@@ -17,91 +14,101 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     outputs:
       tag_name: ${{ steps.release_info.outputs.tag_name }}
+      telemetry_tag: ${{ steps.release_info.outputs.telemetry_tag }}
       network: ${{ steps.release_info.outputs.network }}
     steps:
       - name: Clone and resolve tag/network
         id: release_info
         run: |
+          set -euo pipefail
           git clone https://github.com/ProvableHQ/snarkOS.git snarkos
           cd snarkos
-          git fetch --tags
-          git checkout ${{ github.event.inputs.commit_or_tag }}
+          git fetch --tags --quiet
 
-          TAG_NAME="${{ github.event.inputs.tag_name }}-telemetry"
-          if [[ -z "$TAG_NAME" ]]; then
-            TAG_NAME=$(git describe --tags --exact-match 2>/dev/null || git tag --contains ${{ github.event.inputs.commit_or_tag }} | head -n1 || echo "")
+          INPUT="${{ github.event.inputs.commit_or_tag }}"
+
+          # If INPUT is a tag, use it; otherwise resolve the tag that contains the commit
+          if git rev-parse -q --verify "refs/tags/$INPUT" > /dev/null; then
+            TAG_NAME="$INPUT"
+          else
+            TAG_NAME="$(git describe --tags --exact-match "$INPUT" 2>/dev/null || git tag --contains "$INPUT" | head -n1 || true)"
           fi
 
-          if [[ -z "$TAG_NAME" ]]; then
-            echo "No tag found for commit ${{ github.event.inputs.commit_or_tag }}"
+          if [ -z "${TAG_NAME:-}" ]; then
+            echo "No tag found for input: $INPUT"
             exit 1
           fi
 
           echo "Resolved tag: $TAG_NAME"
-          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "telemetry_tag=${TAG_NAME}-telemetry" >> "$GITHUB_OUTPUT"
 
-          if [[ "$TAG_NAME" == testnet-* ]]; then
-            NETWORK="testnet"
-          elif [[ "$TAG_NAME" == canary-* ]]; then
-            NETWORK="canary"
-          else
-            NETWORK="mainnet"
-          fi
-
-          echo "Inferred network: $NETWORK"
-          echo "network=$NETWORK" >> $GITHUB_OUTPUT
+          echo "network=mainnet" >> "$GITHUB_OUTPUT"
 
   push-manifest:
     needs: extractor
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    
     steps:
-      - name: Export Environment Variables
-        run: |
-          echo "GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}" >> $GITHUB_ENV
-          echo "GCP_ARTIFACT_REGISTRY_REGION=${{ vars.GCP_ARTIFACT_REGISTRY_REGION }}" >> $GITHUB_ENV
-          echo "GCP_ARTIFACT_REPO=${{ vars.GCP_ARTIFACT_REPO }}" >> $GITHUB_ENV
-          echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_SNARKOS_REPO }}" >> $GITHUB_ENV
+    - name: Export Environment Variables
+      run: |
+        echo "GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}" >> $GITHUB_ENV
+        echo "GCP_ARTIFACT_REGISTRY_REGION=${{ vars.GCP_ARTIFACT_REGISTRY_REGION }}" >> $GITHUB_ENV
+        echo "GCP_ARTIFACT_REPO=${{ vars.GCP_ARTIFACT_REPO }}" >> $GITHUB_ENV
+        echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_SNARKOS_REPO }}" >> $GITHUB_ENV
+        echo "NETWORK_DIR=mainnet" >> $GITHUB_ENV
 
-      - name: Map NETWORK_NAME
-        run: |
-          case "${{ needs.extractor.outputs.network }}" in
-            mainnet) echo "NETWORK_DIR=mainnet" >> $GITHUB_ENV ;;
-            testnet) echo "NETWORK_DIR=testnet" >> $GITHUB_ENV ;;
-            canary)  echo "NETWORK_DIR=canary" >> $GITHUB_ENV ;;
-            *) echo "Unknown network" && exit 1 ;;
-          esac
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+    - name: Authenticate with GCP
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_IMG_BUILDER_KEY }}
 
-      - name: Authenticate with GCP
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_IMG_BUILDER_KEY }}
+    - name: Configure Docker for Artifact Registry
+      run: gcloud auth configure-docker ${{ vars.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev
 
-      - name: Configure Docker
-        run: gcloud auth configure-docker us-east1-docker.pkg.dev
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Create and Push Multi-Arch Manifest
+      run: |
+        # Inputs from extractor
+        BASE_TAG="${{ needs.extractor.outputs.telemetry_tag }}"  # e.g. v4.1.0-telemetry
+        PLAIN_TAG="${{ needs.extractor.outputs.tag_name }}"      # e.g. v4.1.0
 
-      - name: Create and Push Multi-Arch Manifest
-        run: |
-          # GCP
-          docker manifest create us-east1-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPO}/${NETWORK_DIR}/snarkos:latest \
-            --amend us-east1-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPO}/${NETWORK_DIR}/snarkos:${{ needs.extractor.outputs.tag_name }}-amd64 \
-            --amend us-east1-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPO}/${NETWORK_DIR}/snarkos:${{ needs.extractor.outputs.tag_name }}-arm64
+        # -------- GCP --------
+        REG="${{ vars.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPO}/${NETWORK_DIR}"
 
-          docker manifest push us-east1-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPO}/${NETWORK_DIR}/snarkos:latest
+        # Create v4.1.0 (plain) manifest from telemetry images
+        docker manifest create \
+          ${REG}/snarkos:${PLAIN_TAG} \
+          --amend ${REG}/snarkos:${BASE_TAG}-amd64 \
+          --amend ${REG}/snarkos:${BASE_TAG}-arm64
+        docker manifest push ${REG}/snarkos:${PLAIN_TAG}
 
-          # Docker Hub
-          docker manifest create ${DOCKERHUB_REPO}:latest \
-            --amend ${DOCKERHUB_REPO}:${{ needs.extractor.outputs.tag_name }}-amd64 \
-            --amend ${DOCKERHUB_REPO}:${{ needs.extractor.outputs.tag_name }}-arm64
+        # Also tag/push :latest pointing to the same two images
+        docker manifest create \
+          ${REG}/snarkos:latest \
+          --amend ${REG}/snarkos:${BASE_TAG}-amd64 \
+          --amend ${REG}/snarkos:${BASE_TAG}-arm64
+        docker manifest push ${REG}/snarkos:latest
 
-          docker manifest push ${DOCKERHUB_REPO}:latest
+        # -------- Docker Hub --------
+        # Create v4.1.0 (plain) manifest
+        docker manifest create \
+          ${DOCKERHUB_REPO}:${PLAIN_TAG} \
+          --amend ${DOCKERHUB_REPO}:${BASE_TAG}-amd64 \
+          --amend ${DOCKERHUB_REPO}:${BASE_TAG}-arm64
+        docker manifest push ${DOCKERHUB_REPO}:${PLAIN_TAG}
+
+        # Also tag/push :latest
+        docker manifest create \
+          ${DOCKERHUB_REPO}:latest \
+          --amend ${DOCKERHUB_REPO}:${BASE_TAG}-amd64 \
+          --amend ${DOCKERHUB_REPO}:${BASE_TAG}-arm64
+        docker manifest push ${DOCKERHUB_REPO}:latest
