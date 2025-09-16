@@ -10,7 +10,8 @@ RUN apt-get update && \
     unzip \
     rclone \
     python3 \
-    python3-pip && \
+    python3-pip \
+    zstd && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Google Cloud SDK
@@ -27,7 +28,7 @@ RUN curl https://rclone.org/install.sh | bash
 
 # Install Docker CLI
 RUN apt-get update && \
-apt-get install -y docker.io curl pigz gnupg && \
+apt-get install -y docker.io curl pigz gnupg zstd && \
 apt-get clean && \
 rm -rf /var/lib/apt/lists/*
 
