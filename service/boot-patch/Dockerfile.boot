@@ -38,7 +38,8 @@ RUN git checkout "${COMMIT_OR_TAG}"
 
 # Apply boot-only heartbeat patch
 COPY patches/heartbeat-boot.patch /usr/src/snarkOS/
-RUN git apply heartbeat-boot.patch
+RUN git apply --3way --whitespace=nowarn heartbeat-boot.patch \
+ || (echo "ERROR: heartbeat-boot.patch failed to apply to snarkOS ${COMMIT_OR_TAG}. Regenerate the patch for this commit." && exit 1)
 
 RUN cargo build --release --features history
 
