@@ -4,10 +4,14 @@ index a1ce8296a..fee3b7d73 100644
 +++ b/node/router/src/heartbeat.rs
 @@ -36,15 +36,15 @@ pub trait Heartbeat<N: Network>: Outbound<N> {
      /// The duration in seconds to sleep in between heartbeat executions.
-     const HEARTBEAT_IN_SECS: u64 = 25; // 25 seconds
+     const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(25);
      /// The minimum number of peers required to maintain connections with.
 -    const MINIMUM_NUMBER_OF_PEERS: usize = 3;
 +    const MINIMUM_NUMBER_OF_PEERS: usize = 4;
+     /// The minimum time between connection attempts to a peer.
+     const MINIMUM_TIME_BETWEEN_CONNECTION_ATTEMPTS: Duration = Duration::from_secs(10);
+     /// The time we consider the node to be starting up and avoid certain warnings such as "No connected peers".
+     const STARTUP_GRACE_PERIOD: Duration = Duration::from_secs(60);
      /// The median number of peers to maintain connections with.
      const MEDIAN_NUMBER_OF_PEERS: usize = max(Self::MAXIMUM_NUMBER_OF_PEERS / 2, Self::MINIMUM_NUMBER_OF_PEERS);
      /// The maximum number of peers permitted to maintain connections with.
@@ -19,7 +23,3 @@ index a1ce8296a..fee3b7d73 100644
      /// The amount of time an IP address is prohibited from connecting.
 -    const IP_BAN_TIME_IN_SECS: u64 = 300;
 +    const IP_BAN_TIME_IN_SECS: u64 = 600;
-
-     /// Handles the heartbeat request.
-     async fn heartbeat(&self) {
-
