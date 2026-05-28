@@ -3,7 +3,7 @@ ARG IMAGE_NAME=ubuntu:24.04
 FROM ${IMAGE_NAME} AS builder
 
 ARG COMMIT_OR_TAG
-ARG REPO_URL=https://github.com/AleoNet/snarkOS.git
+ARG REPO_URL=https://github.com/ProvableHQ/snarkOS.git
 
 ENV RUSTUP_HOME=/usr/local/rustup \
     PATH=/usr/local/cargo/bin:$PATH \
