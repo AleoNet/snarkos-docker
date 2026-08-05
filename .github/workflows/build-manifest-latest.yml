@@ -14,7 +14,6 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     outputs:
       tag_name: ${{ steps.release_info.outputs.tag_name }}
-      telemetry_tag: ${{ steps.release_info.outputs.telemetry_tag }}
       network: ${{ steps.release_info.outputs.network }}
     steps:
       - name: Clone and resolve tag/network
@@ -41,7 +40,6 @@ jobs:
 
           echo "Resolved tag: $TAG_NAME"
           echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
-          echo "telemetry_tag=${TAG_NAME}-telemetry" >> "$GITHUB_OUTPUT"
 
           echo "network=mainnet" >> "$GITHUB_OUTPUT"
 
@@ -75,23 +73,15 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Create and Push Multi-Arch Manifest
+    - name: Create and Push Multi-Arch Latest Manifest
       run: |
-        # Inputs from extractor
-        BASE_TAG="${{ needs.extractor.outputs.telemetry_tag }}"  # e.g. v4.1.0-telemetry
-        PLAIN_TAG="${{ needs.extractor.outputs.tag_name }}"      # e.g. v4.1.0
+        # Inputs from extractor — telemetry is the default (unsuffixed) tag
+        BASE_TAG="${{ needs.extractor.outputs.tag_name }}"  # e.g. v4.1.0
 
         # -------- GCP --------
         REG="${{ vars.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPO}/${NETWORK_DIR}"
 
-        # Create v4.1.0 (plain) manifest from telemetry images
-        docker manifest create \
-          ${REG}/snarkos:${PLAIN_TAG} \
-          --amend ${REG}/snarkos:${BASE_TAG}-amd64 \
-          --amend ${REG}/snarkos:${BASE_TAG}-arm64
-        docker manifest push ${REG}/snarkos:${PLAIN_TAG}
-
-        # Also tag/push :latest pointing to the same two images
+        # Tag/push :latest pointing at the version's amd64/arm64 images
         docker manifest create \
           ${REG}/snarkos:latest \
           --amend ${REG}/snarkos:${BASE_TAG}-amd64 \
@@ -99,14 +89,6 @@ jobs:
         docker manifest push ${REG}/snarkos:latest
 
         # -------- Docker Hub --------
-        # Create v4.1.0 (plain) manifest
-        docker manifest create \
-          ${DOCKERHUB_REPO}:${PLAIN_TAG} \
-          --amend ${DOCKERHUB_REPO}:${BASE_TAG}-amd64 \
-          --amend ${DOCKERHUB_REPO}:${BASE_TAG}-arm64
-        docker manifest push ${DOCKERHUB_REPO}:${PLAIN_TAG}
-
-        # Also tag/push :latest
         docker manifest create \
           ${DOCKERHUB_REPO}:latest \
           --amend ${DOCKERHUB_REPO}:${BASE_TAG}-amd64 \
