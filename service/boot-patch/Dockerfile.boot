@@ -40,7 +40,7 @@ RUN git checkout "${COMMIT_OR_TAG}"
 COPY patches/heartbeat-boot.patch /usr/src/snarkOS/
 RUN git apply heartbeat-boot.patch
 
-RUN cargo build --release --features history
+RUN cargo build --release
 
 
 FROM ${IMAGE_NAME} as runtime
