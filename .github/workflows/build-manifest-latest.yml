@@ -20,7 +20,7 @@ jobs:
         id: release_info
         run: |
           set -euo pipefail
-          git clone https://github.com/ProvableHQ/snarkOS.git snarkos
+          git clone https://github.com/aleo-labs-protocol/snarkOS.git snarkos
           cd snarkos
           git fetch --tags --quiet
 

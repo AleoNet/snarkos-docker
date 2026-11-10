@@ -1,7 +1,7 @@
 
-# Dockerizing ProvableHQ/snarkOS
+# Dockerizing aleo-labs-protocol/snarkOS
 
-This repository provides a Docker build setup for [snarkOS](https://github.com/ProvableHQ/snarkOS), a decentralized operating system powering Aleo.  
+This repository provides a Docker build setup for [snarkOS](https://github.com/aleo-labs-protocol/snarkOS), a decentralized operating system powering Aleo.  
 It supports multi-architecture builds (x86_64 and ARM64) and is optimized for reproducible image builds.
 
 ---
@@ -77,7 +77,7 @@ To build cross-platform images using `buildx`, see [buildx docs](https://docs.do
 
 ## License & Attribution
 
-This repo wraps the official [snarkOS](https://github.com/ProvableHQ/snarkOS) and is maintained by the community.
+This repo wraps the official [snarkOS](https://github.com/aleo-labs-protocol/snarkOS) and is maintained by the community.
 
 Please refer to the original repo for protocol-level documentation.
 
@@ -86,7 +86,7 @@ Please refer to the original repo for protocol-level documentation.
 
 ## Prebuilt Docker Images
 
-All builds from [ProvableHQ/snarkOS releases](https://github.com/ProvableHQ/snarkOS/tags)  
+All builds from [aleo-labs-protocol/snarkOS releases](https://github.com/aleo-labs-protocol/snarkOS/tags)  
 are automatically built and published to Docker Hub:
 
 👉 **[https://hub.docker.com/r/aleohq/snarkos](https://hub.docker.com/r/aleohq/snarkos)**

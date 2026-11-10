@@ -22,7 +22,7 @@ jobs:
       - name: Clone and Extract Info
         id: release_info
         run: |
-          git clone https://github.com/ProvableHQ/snarkOS.git snarkos
+          git clone https://github.com/aleo-labs-protocol/snarkOS.git snarkos
           cd snarkos
           git checkout ${{ github.event.inputs.commit_sha }}
           git fetch --tags
