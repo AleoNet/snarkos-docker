@@ -1,4 +1,4 @@
-name: Build and Push SnarkOS (telemetry / history)
+name: Build and Push SnarkOS (snarkos / ledger-distribution)
 
 on:
   workflow_dispatch:
@@ -11,13 +11,13 @@ on:
         required: false
         default: ''
       features:
-        description: 'Which feature set to build'
+        description: 'Which image to build: snarkos (plain tag) or ledger-distribution (snarkos plus the ledger-distribution binary, tag suffix -ledger-distribution, snarkOS testnet-v4.13.0 and later)'
         type: choice
         required: true
-        default: telemetry
+        default: snarkos
         options:
-            - telemetry
-            - history
+            - snarkos
+            - ledger-distribution
 
 jobs:
 
@@ -104,13 +104,13 @@ jobs:
           esac
 
           case "${{ github.event.inputs.features }}" in
-            telemetry)
-              echo "DOCKERFILE=./service/snarkos-telemetry/Dockerfile" >> $GITHUB_ENV
+            snarkos)
+              echo "DOCKERFILE=./service/snarkos/Dockerfile" >> $GITHUB_ENV
               echo "TAG_SUFFIX=" >> $GITHUB_ENV
               ;;
-            history)
-              echo "DOCKERFILE=./service/snarkos-history-telemetry/Dockerfile" >> $GITHUB_ENV
-              echo "TAG_SUFFIX=-history" >> $GITHUB_ENV
+            ledger-distribution)
+              echo "DOCKERFILE=./service/ledger-distribution/Dockerfile" >> $GITHUB_ENV
+              echo "TAG_SUFFIX=-ledger-distribution" >> $GITHUB_ENV
               ;;
             *)
               echo "Unknown features selection"; exit 1;;
@@ -178,13 +178,13 @@ jobs:
           esac
 
           case "${{ github.event.inputs.features }}" in
-            telemetry)
-              echo "DOCKERFILE=./service/snarkos-telemetry/Dockerfile" >> $GITHUB_ENV
+            snarkos)
+              echo "DOCKERFILE=./service/snarkos/Dockerfile" >> $GITHUB_ENV
               echo "TAG_SUFFIX=" >> $GITHUB_ENV
               ;;
-            history)
-              echo "DOCKERFILE=./service/snarkos-history-telemetry/Dockerfile" >> $GITHUB_ENV
-              echo "TAG_SUFFIX=-history" >> $GITHUB_ENV
+            ledger-distribution)
+              echo "DOCKERFILE=./service/ledger-distribution/Dockerfile" >> $GITHUB_ENV
+              echo "TAG_SUFFIX=-ledger-distribution" >> $GITHUB_ENV
               ;;
             *)
               echo "Unknown features selection"; exit 1;;
@@ -240,8 +240,8 @@ jobs:
           esac
 
           case "${{ github.event.inputs.features }}" in
-            telemetry) echo "TAG_SUFFIX=" >> $GITHUB_ENV ;;
-            history)   echo "TAG_SUFFIX=-history" >> $GITHUB_ENV ;;
+            snarkos)             echo "TAG_SUFFIX=" >> $GITHUB_ENV ;;
+            ledger-distribution) echo "TAG_SUFFIX=-ledger-distribution" >> $GITHUB_ENV ;;
             *) echo "Unknown features selection"; exit 1;;
           esac
 

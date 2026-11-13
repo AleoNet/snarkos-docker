@@ -75,7 +75,7 @@ jobs:
 
     - name: Create and Push Multi-Arch Latest Manifest
       run: |
-        # Inputs from extractor — telemetry is the default (unsuffixed) tag
+        # Inputs from extractor — the plain snarkos image is the unsuffixed tag
         BASE_TAG="${{ needs.extractor.outputs.tag_name }}"  # e.g. v4.1.0
 
         # -------- GCP --------

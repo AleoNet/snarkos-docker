@@ -6,9 +6,7 @@ on:
   #   branches:
   #     - main
   #   paths:
-  #     - '.github/workflows/build-apimon.yml'
-  #     - '.github/workflows/build-snarkos.yml'
-  #     - '.github/workflows/build-snapshot.yml'
+  #     - '.github/workflows/build-snarkos-features.yml'
   #     - '.github/workflows/build-boot-snarkos.yml'
   #     - '.github/workflows/build-manifest-latest.yml'
 
