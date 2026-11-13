@@ -53,8 +53,23 @@ docker run --rm snarkos:${tag} --version
 ## Image Structure
 
 The Dockerfile performs a two-stage build:
-- **Builder stage** uses `cargo` to compile snarkOS with specific features.
+- **Builder stage** uses `cargo` to compile snarkOS (and ledger-distribution, for the ledger-distribution image).
 - **Runtime stage** installs minimal runtime dependencies and copies the final binary.
+
+## Images
+
+The **Build and Push SnarkOS** workflow builds one of two images from a snarkOS tag or commit:
+
+| Image choice | Dockerfile | Tag | Entrypoint |
+|---|---|---|---|
+| `snarkos` | `service/snarkos/Dockerfile` | `aleohq/snarkos:<tag>` | `/aleo/bin/snarkos` |
+| `ledger-distribution` | `service/ledger-distribution/Dockerfile` | `aleohq/snarkos:<tag>-ledger-distribution` | `/aleo/bin/snarkos`; the image also has `/aleo/bin/ledger-distribution` |
+
+`ledger-distribution` uploads a node's blocks to the block CDN bucket (see its [README](https://github.com/aleo-labs-protocol/snarkOS/tree/staging/ledger-distribution)). The crate exists in snarkOS from `testnet-v4.13.0`; the build fails for older tags. Run it from the same snarkOS tag as the node whose ledger it reads:
+
+```bash
+docker run --rm --entrypoint /aleo/bin/ledger-distribution aleohq/snarkos:<tag>-ledger-distribution <network ID>
+```
 
 ---
 

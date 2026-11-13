@@ -41,7 +41,7 @@ RUN git clone -n "${REPO_URL}" snarkOS
 
 WORKDIR /usr/src/snarkOS
 RUN git checkout "${COMMIT_OR_TAG}" && \
-    cargo build --release --features history,telemetry
+    cargo build --release
 
 # ---------- Runtime stage ----------
 FROM ${IMAGE_NAME} as runtime

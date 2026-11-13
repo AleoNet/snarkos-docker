@@ -40,8 +40,10 @@ WORKDIR /usr/src
 RUN git clone -n "${REPO_URL}" snarkOS
 
 WORKDIR /usr/src/snarkOS
+# snarkos plus ledger-distribution (the block CDN uploader). The crate exists in
+# snarkOS from testnet-v4.13.0; older tags fail here.
 RUN git checkout "${COMMIT_OR_TAG}" && \
-    cargo build --release --features telemetry
+    cargo build --release -p snarkos -p snarkos-ledger-distribution
 
 # ---------- Runtime stage ----------
 FROM ${IMAGE_NAME} as runtime
@@ -66,9 +68,10 @@ RUN apt update && \
 # Add symlink for .aleo path
 RUN ln -s /aleo/data /root/.aleo
 
-# Copy binary and entrypoint
+# Copy binaries and entrypoint
 COPY --from=builder /usr/src/snarkOS/target/release/snarkos /aleo/bin/snarkos
+COPY --from=builder /usr/src/snarkOS/target/release/ledger-distribution /aleo/bin/ledger-distribution
 
-# Set entrypoint
+# Set entrypoint (run the uploader with --entrypoint /aleo/bin/ledger-distribution)
 ENTRYPOINT [ "/aleo/bin/snarkos" ]
 CMD ["--help"]
