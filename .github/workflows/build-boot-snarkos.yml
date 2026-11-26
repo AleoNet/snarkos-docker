@@ -38,7 +38,7 @@ jobs:
           echo "Extracted tag: $TAG_NAME"
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
 
-          if [[ "$TAG_NAME" == testnet-* ]]; then
+          if [[ "$TAG_NAME" == testnet-* || "$TAG_NAME" == v*-rc.* ]]; then
             NETWORK="testnet"
           elif [[ "$TAG_NAME" == canary-* ]]; then
             NETWORK="canary"
